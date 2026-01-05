@@ -7,3 +7,14 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 }
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    email?: string;
+    name?: string;
+    stravaAccessToken?: string;
+    stravaRefreshToken?: string;
+    stravaExpiresAt?: number;
+  }
+}

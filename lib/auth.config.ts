@@ -12,17 +12,30 @@ export const authOptions: NextAuthOptions = {
   }),
   providers: [],
   session: {
-    strategy: "database",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   pages: {
     signIn: "auth/signin",
     signOut: "auth/signout",
   },
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email ?? undefined;
+        token.name = user.name ?? undefined;
+      }
+      if (account?.provider === "strava") {
+        token.stravaAccessToken = account.access_token;
+        token.stravaRefreshToken = account.refresh_token;
+        token.stravaExpiresAt = account.expires_at;
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token.id as string;
       }
       return session;
     },
