@@ -11,8 +11,14 @@ import {
   LoginAndSignUpSchema,
 } from "@/types/authValidation";
 import { ErrorAlert } from "./alert/ErrorAlert";
+import { SuccessAlert } from "./alert/SuccessAlert";
+import { signIn } from "next-auth/react";
+import { useAsyncData } from "@/hooks/useAsyncData";
+import { useRouter } from "next/navigation";
+import { signUpAction } from "@/app/actions/auth";
 
 export default function LoginForm() {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -21,14 +27,52 @@ export default function LoginForm() {
     resolver: zodResolver(LoginAndSignUpSchema),
   });
 
+  const { loading, error, success, execute } = useAsyncData();
+
   const onSubmit = async (data: LoginAndSignUpType) => {
-    console.log("Form submitted:", data);
-    // TODO: Add your authentication logic here later
+    await execute(async () => {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      setTimeout(() => {
+        router.push("/schedule");
+      }, 1500);
+    });
   };
 
-  const handleSignUp = () => {
-    console.log("Sign up clicked");
-    // TODO: Add navigation to sign up page later
+  const handleSignUp = async () => {
+    const formData = handleSubmit(async (data: LoginAndSignUpType) => {
+      await execute(async () => {
+        const result = await signUpAction(data.email, data.password);
+
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        const loginResult = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
+
+        if (loginResult?.error) {
+          throw new Error(
+            "Account created but login failed. Please try logging in."
+          );
+        }
+
+        setTimeout(() => {
+          router.push("/schedule");
+        }, 1500);
+      });
+    });
+    formData();
   };
 
   return (
@@ -39,6 +83,14 @@ export default function LoginForm() {
         </h2>
         <p className="text-muted-foreground">Enter your credentials to login</p>
       </div>
+
+      {error && <ErrorAlert message={error} />}
+      {success && (
+        <SuccessAlert
+          message="Login successful! Redirecting..."
+          className="bg-white pl-2"
+        />
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Email Field */}
@@ -62,13 +114,17 @@ export default function LoginForm() {
             placeholder="Enter your password"
             {...register("password")}
           />
-          {errors.email && <ErrorAlert message={errors.email.message} />}
+          {errors.password && <ErrorAlert message={errors.password.message} />}
         </div>
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-2">
-          <Button type="submit" className="w-full " disabled={isSubmitting}>
-            {isSubmitting ? "Logging in..." : "Login"}
+          <Button
+            type="submit"
+            className="w-full "
+            disabled={isSubmitting || loading}
+          >
+            {isSubmitting || loading ? "Logging in..." : "Login"}
           </Button>
 
           <Button
