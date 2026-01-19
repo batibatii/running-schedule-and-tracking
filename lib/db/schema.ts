@@ -53,7 +53,7 @@ export const accounts = pgTable(
     compoundKey: primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-  })
+  }),
 );
 
 export const sessions = pgTable("sessions", {
@@ -79,7 +79,7 @@ export const verificationTokens = pgTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  }),
 );
 
 export const runs = pgTable("runs", {
@@ -122,12 +122,40 @@ export const schedules = pgTable("schedules", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Weekly workouts table - for the weekly schedule planner
+export const weeklyWorkouts = pgTable("weekly_workouts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  workoutType: varchar("workout_type", { length: 50 }).notNull(),
+
+  heartRateZone: varchar("heart_rate_zone", { length: 10 }).notNull(),
+
+  distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
+  duration: integer("duration"), // in minutes
+
+  dayOfWeek: varchar("day_of_week", { length: 20 }).notNull(),
+
+  weekStartDate: date("week_start_date").notNull(),
+
+  title: varchar("title", { length: 255 }),
+  notes: text("notes"), // Training details, comments
+
+  completed: boolean("completed").default(false).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   sessions: many(sessions),
   runs: many(runs),
   schedules: many(schedules),
+  weeklyWorkouts: many(weeklyWorkouts),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -158,6 +186,13 @@ export const schedulesRelations = relations(schedules, ({ one }) => ({
   }),
 }));
 
+export const weeklyWorkoutsRelations = relations(weeklyWorkouts, ({ one }) => ({
+  user: one(users, {
+    fields: [weeklyWorkouts.userId],
+    references: [users.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -172,3 +207,6 @@ export type NewRun = typeof runs.$inferInsert;
 
 export type Schedule = typeof schedules.$inferSelect;
 export type NewSchedule = typeof schedules.$inferInsert;
+
+export type WeeklyWorkout = typeof weeklyWorkouts.$inferSelect;
+export type NewWeeklyWorkout = typeof weeklyWorkouts.$inferInsert;

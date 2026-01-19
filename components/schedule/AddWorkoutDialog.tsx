@@ -1,0 +1,246 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "../ui/textarea";
+import { SuccessAlert } from "@/components/alert/SuccessAlert";
+import { ErrorAlert } from "@/components/alert/ErrorAlert";
+import { useAsyncData } from "@/hooks/useAsyncData";
+import { workoutFormSchema, WorkoutFormData } from "@/types/workoutValidation";
+import { DayOfWeek, WorkoutType, HeartRateZone } from "@/types/workout";
+
+interface AddWorkoutDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  dayOfWeek: DayOfWeek;
+  weekStartDate: string;
+  onSave: (workout: WorkoutFormData) => Promise<void>;
+}
+
+export function AddWorkoutDialog({
+  open,
+  onOpenChange,
+  dayOfWeek,
+  weekStartDate,
+  onSave,
+}: AddWorkoutDialogProps) {
+  const {
+    loading,
+    error,
+    success,
+    execute,
+    reset: resetAsync,
+  } = useAsyncData();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm({
+    resolver: zodResolver(workoutFormSchema),
+    defaultValues: {
+      workoutType: "",
+      heartRateZone: "",
+      distance: "",
+      duration: "",
+      title: "",
+      notes: "",
+    },
+  });
+
+  const workoutType = watch("workoutType");
+  const heartRateZone = watch("heartRateZone");
+
+  const onSubmit = async (data: WorkoutFormData) => {
+    await execute(async () => {
+      await onSave(data);
+      setTimeout(() => {
+        reset();
+        resetAsync();
+        onOpenChange(false);
+      }, 1000);
+    });
+  };
+
+  const handleClose = () => {
+    reset();
+    resetAsync();
+    onOpenChange(false);
+  };
+
+  const dayName = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-125">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>Add Workout - {dayName}</DialogTitle>
+            <DialogDescription>
+              Plan your running workout for {dayName}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {error && <ErrorAlert message={error} />}
+            {success && <SuccessAlert message="Workout added successfully!" />}
+
+            <div className="grid gap-2">
+              <Label htmlFor="workoutType">
+                Workout Type <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={workoutType}
+                onValueChange={(value: string) =>
+                  setValue("workoutType", value as WorkoutType)
+                }
+              >
+                <SelectTrigger id="workoutType">
+                  <SelectValue placeholder="Select workout type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy Run</SelectItem>
+                  <SelectItem value="tempo">Tempo Run</SelectItem>
+                  <SelectItem value="long">Long Run</SelectItem>
+                  <SelectItem value="recovery">Recovery Run</SelectItem>
+                  <SelectItem value="race">Race</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.workoutType && (
+                <p className="text-sm text-destructive">
+                  {errors.workoutType.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="heartRateZone">
+                Heart Rate Zone <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={heartRateZone}
+                onValueChange={(value: string) =>
+                  setValue("heartRateZone", value as HeartRateZone)
+                }
+              >
+                <SelectTrigger id="heartRateZone">
+                  <SelectValue placeholder="Select heart rate zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="zone-1">Zone 1 (Recovery)</SelectItem>
+                  <SelectItem value="zone-2">Zone 2 (Aerobic)</SelectItem>
+                  <SelectItem value="zone-3">Zone 3 (Tempo)</SelectItem>
+                  <SelectItem value="zone-4">Zone 4 (Threshold)</SelectItem>
+                  <SelectItem value="zone-5">Zone 5 (Max)</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.heartRateZone && (
+                <p className="text-sm text-destructive">
+                  {errors.heartRateZone.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="distance">
+                Distance (km) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="distance"
+                type="number"
+                step="0.1"
+                min="0"
+                {...register("distance")}
+              />
+              {errors.distance && (
+                <p className="text-sm text-destructive">
+                  {errors.distance.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="duration">Duration (minutes)</Label>
+              <Input
+                id="duration"
+                type="number"
+                min="0"
+                {...register("duration")}
+              />
+              {errors.duration && (
+                <p className="text-sm text-destructive">
+                  {errors.duration.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title (optional)</Label>
+              <Input
+                id="title"
+                type="text"
+                placeholder="e.g., Morning tempo run"
+                {...register("title")}
+              />
+              {errors.title && (
+                <p className="text-sm text-destructive">
+                  {errors.title.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Training details, how you felt, etc."
+                {...register("notes")}
+              />
+              {errors.notes && (
+                <p className="text-sm text-destructive">
+                  {errors.notes.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Adding..." : "Add Workout"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
