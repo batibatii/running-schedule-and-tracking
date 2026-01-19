@@ -14,6 +14,7 @@ import {
 } from "@/lib/utils/date";
 import { DayOfWeek } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
+import { WorkoutCard } from "./WorkoutCard";
 import { WorkoutFormData } from "@/types/workoutValidation";
 
 export function WeeklySchedule() {
@@ -23,7 +24,7 @@ export function WeeklySchedule() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
 
-  const [workout, setWorkouts] = useState<
+  const [workouts, setWorkouts] = useState<
     Array<
       WorkoutFormData & {
         dayOfWeek: DayOfWeek;
@@ -131,9 +132,36 @@ export function WeeklySchedule() {
 
               {/* Workouts Container */}
               <div className="p-2 space-y-2">
-                <div className="text-xs text-muted-foreground text-center py-8">
-                  No workouts
-                </div>
+                {/* Filter and render workouts for this day */}
+                {workouts
+                  .filter(
+                    (w) =>
+                      w.dayOfWeek === day &&
+                      w.weekStartDate === formatDateToISO(weekStartDate)
+                  )
+                  .map((workout) => (
+                    <WorkoutCard
+                      key={workout.id}
+                      id={workout.id}
+                      workoutType={workout.workoutType}
+                      heartRateZone={workout.heartRateZone}
+                      distance={workout.distance}
+                      duration={workout.duration}
+                      title={workout.title}
+                      notes={workout.notes}
+                    />
+                  ))}
+
+                {/* Show empty state only if no workouts for this day */}
+                {workouts.filter(
+                  (w) =>
+                    w.dayOfWeek === day &&
+                    w.weekStartDate === formatDateToISO(weekStartDate)
+                ).length === 0 && (
+                  <div className="text-xs text-muted-foreground text-center py-8">
+                    No workouts
+                  </div>
+                )}
 
                 <Button
                   variant="outline"
