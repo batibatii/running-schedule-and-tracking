@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -9,13 +9,17 @@ import {
   getWeekDates,
   formatDateDisplay,
   formatDateToISO,
-  getDayOfWeek,
   getDayName,
 } from "@/lib/utils/date";
-import { DayOfWeek } from "@/types/workout";
+import { DayOfWeek, Workout } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { WorkoutFormData } from "@/types/workoutValidation";
+import { useAsyncData } from "@/hooks/useAsyncData";
+import {
+  fetchWorkoutsAction,
+  createWorkoutAction,
+} from "@/app/actions/workout";
 
 export function WeeklySchedule() {
   // Week navigation state (0 = this week, -1 = last week, 1 = next week)
@@ -24,33 +28,35 @@ export function WeeklySchedule() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
 
-  const [workouts, setWorkouts] = useState<
-    Array<
-      WorkoutFormData & {
-        dayOfWeek: DayOfWeek;
-        weekStartDate: string;
-        id: string;
-      }
-    >
-  >([]);
-
   const handleOpenDialog = (day: DayOfWeek) => {
     setSelectedDay(day);
     setIsDialogOpen(true);
   };
 
-  const handleSaveWorkout = async (workout: WorkoutFormData) => {
-    const newWorkout = {
-      ...workout,
-      dayOfWeek: selectedDay,
-      weekStartDate: formatDateToISO(weekStartDate),
-      id: crypto.randomUUID(), // Temporary ID for local state
-    };
-    setWorkouts((prev) => [...prev, newWorkout]);
-  };
+  const {
+    data: workouts,
+    loading,
+    error,
+    execute: fetchWorkouts,
+  } = useAsyncData<Workout[]>();
 
   const weekStartDate = getWeekStartDate(weekOffset);
   const weekDates = getWeekDates(weekStartDate);
+  const weekStartDateISO = formatDateToISO(weekStartDate);
+
+  const fetchWorkoutsFromAPI = useCallback(async (): Promise<Workout[]> => {
+    return fetchWorkoutsAction(weekStartDateISO);
+  }, [weekStartDateISO]);
+
+  useEffect(() => {
+    fetchWorkouts(fetchWorkoutsFromAPI);
+  }, [fetchWorkouts, fetchWorkoutsFromAPI]);
+
+  const handleSaveWorkout = async (workout: WorkoutFormData) => {
+    await createWorkoutAction(workout, selectedDay, weekStartDateISO);
+
+    fetchWorkouts(fetchWorkoutsFromAPI);
+  };
 
   const daysOfWeek: DayOfWeek[] = [
     "monday",
@@ -133,11 +139,11 @@ export function WeeklySchedule() {
               {/* Workouts Container */}
               <div className="p-2 space-y-2">
                 {/* Filter and render workouts for this day */}
-                {workouts
+                {(workouts ?? [])
                   .filter(
                     (w) =>
                       w.dayOfWeek === day &&
-                      w.weekStartDate === formatDateToISO(weekStartDate)
+                      w.weekStartDate === formatDateToISO(weekStartDate),
                   )
                   .map((workout) => (
                     <WorkoutCard
@@ -145,7 +151,7 @@ export function WeeklySchedule() {
                       id={workout.id}
                       workoutType={workout.workoutType}
                       heartRateZone={workout.heartRateZone}
-                      distance={workout.distance}
+                      distance={workout.distance ?? 0}
                       duration={workout.duration}
                       title={workout.title}
                       notes={workout.notes}
@@ -153,10 +159,10 @@ export function WeeklySchedule() {
                   ))}
 
                 {/* Show empty state only if no workouts for this day */}
-                {workouts.filter(
+                {(workouts ?? []).filter(
                   (w) =>
                     w.dayOfWeek === day &&
-                    w.weekStartDate === formatDateToISO(weekStartDate)
+                    w.weekStartDate === formatDateToISO(weekStartDate),
                 ).length === 0 && (
                   <div className="text-xs text-muted-foreground text-center py-8">
                     No workouts

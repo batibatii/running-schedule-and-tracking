@@ -28,6 +28,7 @@ export interface Workout {
 
   distance?: number; // in kilometers
   duration?: number; // in minutes
+  pace?: string;
 
   dayOfWeek: DayOfWeek;
   weekStartDate: string; // ISO date string (YYYY-MM-DD) - Monday of the week

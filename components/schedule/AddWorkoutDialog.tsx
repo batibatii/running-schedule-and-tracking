@@ -26,6 +26,8 @@ import { ErrorAlert } from "@/components/alert/ErrorAlert";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { workoutFormSchema, WorkoutFormData } from "@/types/workoutValidation";
 import { DayOfWeek, WorkoutType, HeartRateZone } from "@/types/workout";
+import { useEffect } from "react";
+import { calculateDuration } from "@/lib/utils/pace";
 
 interface AddWorkoutDialogProps {
   open: boolean;
@@ -64,6 +66,7 @@ export function AddWorkoutDialog({
       heartRateZone: "",
       distance: "",
       duration: "",
+      pace: "",
       title: "",
       notes: "",
     },
@@ -71,6 +74,15 @@ export function AddWorkoutDialog({
 
   const workoutType = watch("workoutType");
   const heartRateZone = watch("heartRateZone");
+  const distance = watch("distance");
+  const pace = watch("pace");
+
+  useEffect(() => {
+    if (distance && pace && /^\d{1,2}:\d{2}$/.test(pace)) {
+      const calculatedDuration = calculateDuration(Number(distance), pace);
+      setValue("duration", String(calculatedDuration));
+    }
+  }, [distance, pace, setValue]);
 
   const onSubmit = async (data: WorkoutFormData) => {
     await execute(async () => {
@@ -128,7 +140,7 @@ export function AddWorkoutDialog({
                 </SelectContent>
               </Select>
               {errors.workoutType && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive pl-1">
                   {errors.workoutType.message}
                 </p>
               )}
@@ -156,7 +168,7 @@ export function AddWorkoutDialog({
                 </SelectContent>
               </Select>
               {errors.heartRateZone && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive pl-1">
                   {errors.heartRateZone.message}
                 </p>
               )}
@@ -174,8 +186,23 @@ export function AddWorkoutDialog({
                 {...register("distance")}
               />
               {errors.distance && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive pl-1">
                   {errors.distance.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="pace">Pacee (min/km)</Label>
+              <Input
+                id="pace"
+                type="text"
+                placeholder="e.g., 5:30"
+                {...register("pace")}
+              />
+              {errors.pace && (
+                <p className="text-sm text-destructive">
+                  {errors.pace.message}
                 </p>
               )}
             </div>

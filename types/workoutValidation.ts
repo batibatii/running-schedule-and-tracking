@@ -42,6 +42,13 @@ export const workoutFormSchema = z.object({
     })
     .optional(),
 
+  pace: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d{1,2}:\d{2}$/.test(val), {
+      message: "Pace must be in MM:SS format (e.g., 5:30)",
+    }),
+
   title: z.string().optional(),
 
   notes: z.string().optional(),
