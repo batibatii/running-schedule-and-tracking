@@ -1,8 +1,8 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth";
-import { getWorkouts, createWorkout } from "@/lib/dal/workout";
-import { createWorkoutSchema, Workout } from "@/types/workout";
+import { getWorkouts, createWorkout, updateWorkout } from "@/lib/dal/workout";
+import { Workout } from "@/types/workout";
 import { DayOfWeek } from "@/types/workout";
 import { WorkoutFormData } from "@/types/workoutValidation";
 
@@ -33,4 +33,17 @@ export async function createWorkoutAction(
   });
 
   return workout;
+}
+
+export async function updateWorkoutDayAction(
+  workoutId: string,
+  newDayOfWeek: DayOfWeek,
+) {
+  const user = await requireAuth();
+
+  const updatedWorkout = await updateWorkout(workoutId, user.id, {
+    dayOfWeek: newDayOfWeek,
+  });
+
+  return updatedWorkout;
 }
