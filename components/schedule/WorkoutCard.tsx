@@ -13,6 +13,7 @@ interface WorkoutCardProps {
   notes?: string;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onClick?: () => void;
 }
 
 function getZoneColor(zone: HeartRateZone): string {
@@ -56,11 +57,13 @@ export function WorkoutCard({
   duration,
   title,
   notes,
-  onEdit,
-  onDelete,
+  onClick,
 }: WorkoutCardProps) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow h-25"
+      onClick={onClick}
+    >
       <CardContent className="p-3 space-y-2">
         {/* Header: Type and Zone Badge */}
         <div className="flex items-center justify-between">

@@ -19,6 +19,7 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import {
   fetchWorkoutsAction,
   createWorkoutAction,
+  updateWorkoutAction,
 } from "@/app/actions/workout";
 import {
   DndContext,
@@ -37,11 +38,23 @@ export function WeeklySchedule() {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
 
-  const handleOpenDialog = (day: DayOfWeek) => {
+  const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
     setSelectedDay(day);
+    setEditingWorkout(workout || null);
     setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      if (editingWorkout) {
+        fetchWorkouts(fetchWorkoutsFromAPI);
+      }
+      setEditingWorkout(null);
+    }
   };
 
   const [pendingChanges, setPendingChanges] = useState<Map<string, DayOfWeek>>(
@@ -58,12 +71,7 @@ export function WeeklySchedule() {
     }),
   );
 
-  const {
-    data: workouts,
-    loading,
-    error,
-    execute: fetchWorkouts,
-  } = useAsyncData<Workout[]>();
+  const { data: workouts, execute: fetchWorkouts } = useAsyncData<Workout[]>();
 
   const weekStartDate = getWeekStartDate(weekOffset);
   const weekDates = getWeekDates(weekStartDate);
@@ -78,9 +86,16 @@ export function WeeklySchedule() {
   }, [fetchWorkouts, fetchWorkoutsFromAPI]);
 
   const handleSaveWorkout = async (workout: WorkoutFormData) => {
-    await createWorkoutAction(workout, selectedDay, weekStartDateISO);
-
-    fetchWorkouts(fetchWorkoutsFromAPI);
+    if (editingWorkout) {
+      await updateWorkoutAction(
+        editingWorkout.id,
+        workout,
+        selectedDay,
+        weekStartDateISO,
+      );
+    } else {
+      await createWorkoutAction(workout, selectedDay, weekStartDateISO);
+    }
   };
 
   const daysOfWeek: DayOfWeek[] = [
@@ -253,7 +268,7 @@ export function WeeklySchedule() {
         </div>
 
         {/* Weekly Schedule Grid */}
-        <div className="grid grid-cols-7 gap-2 ">
+        <div className="grid grid-cols-7 gap-2 items-start max-w-385">
           {daysOfWeek.map((day, index) => {
             const date = weekDates[index];
             const isToday =
@@ -262,10 +277,10 @@ export function WeeklySchedule() {
             return (
               <Card
                 key={day}
-                className={`min-h-85 ${isToday ? "ring-2 ring-primary" : ""}`}
+                className={`min-h-60 flex flex-col ${isToday ? "ring-2 ring-primary" : ""}`}
               >
                 {/* Day Header */}
-                <div className="border-b p-3">
+                <div className="border-b p-3 shrink-0">
                   <div className="text-sm font-semibold">{getDayName(day)}</div>
                   <div
                     className={`text-xs ${
@@ -279,38 +294,49 @@ export function WeeklySchedule() {
                 </div>
 
                 {/* Workouts Container */}
-                <DroppableDay day={day}>
-                  <div className="p-2 space-y-2">
-                    {getDisplayWorkouts()
-                      .filter(
-                        (w) =>
-                          w.dayOfWeek === day &&
-                          w.weekStartDate === formatDateToISO(weekStartDate),
-                      )
-                      .map((workout) => (
-                        <DraggableWorkoutCard key={workout.id} id={workout.id}>
-                          <WorkoutCard
-                            id={workout.id}
-                            workoutType={workout.workoutType}
-                            heartRateZone={workout.heartRateZone}
-                            distance={workout.distance ?? 0}
-                            duration={workout.duration}
-                            title={workout.title}
-                            notes={workout.notes}
-                          />
-                        </DraggableWorkoutCard>
-                      ))}
+                <div className="flex flex-col flex-1">
+                  <div className="overflow-y-auto max-h-66">
+                    <DroppableDay day={day}>
+                      <div className="p-2 space-y-2 ">
+                        {getDisplayWorkouts()
+                          .filter(
+                            (w) =>
+                              w.dayOfWeek === day &&
+                              w.weekStartDate ===
+                                formatDateToISO(weekStartDate),
+                          )
+                          .map((workout) => (
+                            <DraggableWorkoutCard
+                              key={workout.id}
+                              id={workout.id}
+                            >
+                              <WorkoutCard
+                                id={workout.id}
+                                workoutType={workout.workoutType}
+                                heartRateZone={workout.heartRateZone}
+                                distance={workout.distance ?? 0}
+                                duration={workout.duration}
+                                title={workout.title}
+                                notes={workout.notes}
+                                onClick={() => handleOpenDialog(day, workout)}
+                              />
+                            </DraggableWorkoutCard>
+                          ))}
 
-                    {getDisplayWorkouts().filter(
-                      (w) =>
-                        w.dayOfWeek === day &&
-                        w.weekStartDate === formatDateToISO(weekStartDate),
-                    ).length === 0 && (
-                      <div className="text-xs text-muted-foreground text-center py-8">
-                        No workouts
+                        {getDisplayWorkouts().filter(
+                          (w) =>
+                            w.dayOfWeek === day &&
+                            w.weekStartDate === formatDateToISO(weekStartDate),
+                        ).length === 0 && (
+                          <div className="text-xs text-muted-foreground text-center py-8">
+                            No workouts
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </DroppableDay>
+                  </div>
 
+                  <div className="p-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -321,7 +347,7 @@ export function WeeklySchedule() {
                       Add
                     </Button>
                   </div>
-                </DroppableDay>
+                </div>
               </Card>
             );
           })}
@@ -329,10 +355,23 @@ export function WeeklySchedule() {
 
         <AddWorkoutDialog
           open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
+          onOpenChange={handleCloseDialog}
           dayOfWeek={selectedDay}
           weekStartDate={formatDateToISO(weekStartDate)}
           onSave={handleSaveWorkout}
+          editWorkout={
+            editingWorkout
+              ? {
+                  id: editingWorkout.id,
+                  workoutType: editingWorkout.workoutType,
+                  heartRateZone: editingWorkout.heartRateZone,
+                  distance: editingWorkout.distance ?? 0,
+                  duration: editingWorkout.duration,
+                  title: editingWorkout.title,
+                  notes: editingWorkout.notes,
+                }
+              : undefined
+          }
         />
         <DragOverlay>
           {activeId ? (

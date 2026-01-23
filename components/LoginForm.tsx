@@ -63,7 +63,7 @@ export default function LoginForm() {
 
         if (loginResult?.error) {
           throw new Error(
-            "Account created but login failed. Please try logging in."
+            "Account created but login failed. Please try logging in.",
           );
         }
 
@@ -93,7 +93,6 @@ export default function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Email Field */}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -105,7 +104,6 @@ export default function LoginForm() {
           {errors.email && <ErrorAlert message={errors.email.message} />}
         </div>
 
-        {/* Password Field */}
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <Input
@@ -117,7 +115,6 @@ export default function LoginForm() {
           {errors.password && <ErrorAlert message={errors.password.message} />}
         </div>
 
-        {/* Action Buttons */}
         <div className="space-y-2 pt-2">
           <Button
             type="submit"
@@ -142,7 +139,6 @@ export default function LoginForm() {
           <div className="border flex-1"></div>
         </div>
 
-        {/* Social Login Section */}
         <Button
           type="button"
           variant="outline"

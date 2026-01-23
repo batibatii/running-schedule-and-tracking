@@ -29,21 +29,30 @@ import { DayOfWeek, WorkoutType, HeartRateZone } from "@/types/workout";
 import { useEffect } from "react";
 import { calculateDuration } from "@/lib/utils/pace";
 
-interface AddWorkoutDialogProps {
+interface AddOrEditWorkoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dayOfWeek: DayOfWeek;
   weekStartDate: string;
   onSave: (workout: WorkoutFormData) => Promise<void>;
+  editWorkout?: {
+    id: string;
+    heartRateZone: string;
+    workoutType: WorkoutType;
+    distance: number;
+    duration?: number;
+    title?: string;
+    notes?: string;
+  };
 }
 
 export function AddWorkoutDialog({
   open,
   onOpenChange,
   dayOfWeek,
-  weekStartDate,
   onSave,
-}: AddWorkoutDialogProps) {
+  editWorkout,
+}: AddOrEditWorkoutDialogProps) {
   const {
     loading,
     error,
@@ -55,7 +64,7 @@ export function AddWorkoutDialog({
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
     reset,
     setValue,
     watch,
@@ -84,14 +93,46 @@ export function AddWorkoutDialog({
     }
   }, [distance, pace, setValue]);
 
+  useEffect(() => {
+    if (editWorkout && open) {
+      reset({
+        workoutType: editWorkout.workoutType,
+        heartRateZone: editWorkout.heartRateZone,
+        distance: String(editWorkout.distance),
+        duration: editWorkout.duration ? String(editWorkout.duration) : "",
+        pace: "",
+        title: editWorkout.title || "",
+        notes: editWorkout.notes || "",
+      });
+    } else if (!editWorkout && open) {
+      reset({
+        workoutType: "",
+        heartRateZone: "",
+        distance: "",
+        duration: "",
+        pace: "",
+        title: "",
+        notes: "",
+      });
+    }
+  }, [editWorkout, open]);
+
   const onSubmit = async (data: WorkoutFormData) => {
     await execute(async () => {
       await onSave(data);
-      setTimeout(() => {
+
+      // For edit mode, close immediately. For add mode, show success briefly
+      if (editWorkout) {
         reset();
         resetAsync();
         onOpenChange(false);
-      }, 1000);
+      } else {
+        setTimeout(() => {
+          reset();
+          resetAsync();
+          onOpenChange(false);
+        }, 1000);
+      }
     });
   };
 
@@ -108,9 +149,12 @@ export function AddWorkoutDialog({
       <DialogContent className="sm:max-w-125">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Add Workout - {dayName}</DialogTitle>
+            <DialogTitle>
+              {editWorkout ? "Edit Workout" : "Add Workout"} - {dayName}
+            </DialogTitle>
             <DialogDescription>
-              Plan your running workout for {dayName}
+              {editWorkout ? "Update your" : "Plan your"} running workout for{" "}
+              {dayName}
             </DialogDescription>
           </DialogHeader>
 
@@ -262,8 +306,17 @@ export function AddWorkoutDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add Workout"}
+            <Button
+              type="submit"
+              disabled={loading || (editWorkout && !isDirty)}
+            >
+              {loading
+                ? editWorkout
+                  ? "Saving..."
+                  : "Adding..."
+                : editWorkout
+                  ? "Save Changes"
+                  : "Add Workout"}
             </Button>
           </DialogFooter>
         </form>
