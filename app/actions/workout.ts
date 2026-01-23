@@ -47,3 +47,19 @@ export async function updateWorkoutDayAction(
 
   return updatedWorkout;
 }
+
+export async function updateWorkoutAction(
+  workoutId: string,
+  data: WorkoutFormData,
+  dayOfWeek: DayOfWeek,
+  weekStartDate: string,
+) {
+  const user = await requireAuth();
+
+  const updatedWorkout = await updateWorkout(workoutId, user.id, {
+    ...data,
+    dayOfWeek,
+    weekStartDate,
+  });
+  return updatedWorkout;
+}
