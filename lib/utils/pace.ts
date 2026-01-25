@@ -18,7 +18,15 @@ export function minutesToPace(minutes: number): string {
 
   const formattedSeconds = String(remainingSeconds).padStart(2, "0");
 
-  return  `${wholeMinutes}:${formattedSeconds}`;
+  return `${wholeMinutes}:${formattedSeconds}`;
 }
 
+export function calculatePaceFromDuration(distance: number, duration: number) {
+  if (distance === 0) {
+    return "";
+  }
 
+  const pacePerKm = duration / distance;
+
+  return minutesToPace(pacePerKm);
+}

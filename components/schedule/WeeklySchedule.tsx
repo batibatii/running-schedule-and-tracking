@@ -20,6 +20,7 @@ import {
   fetchWorkoutsAction,
   createWorkoutAction,
   updateWorkoutAction,
+  deleteWorkoutAction,
 } from "@/app/actions/workout";
 import {
   DndContext,
@@ -40,6 +41,9 @@ export function WeeklySchedule() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
+  const [offsetHighlightDate, setOffsetHighlightDate] = useState<string | null>(
+    null,
+  );
 
   const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
     setSelectedDay(day);
@@ -96,6 +100,12 @@ export function WeeklySchedule() {
     } else {
       await createWorkoutAction(workout, selectedDay, weekStartDateISO);
     }
+    fetchWorkouts(fetchWorkoutsFromAPI);
+  };
+
+  const handleDeleteWorkout = async (workoutId: string) => {
+    await deleteWorkoutAction(workoutId);
+    fetchWorkouts(fetchWorkoutsFromAPI);
   };
 
   const daysOfWeek: DayOfWeek[] = [
@@ -118,6 +128,16 @@ export function WeeklySchedule() {
 
   const handleToday = () => {
     setWeekOffset(0);
+  };
+
+  const handleDayClick = (date: Date) => {
+    const dateISO = formatDateToISO(date);
+
+    if (offsetHighlightDate === dateISO) {
+      setOffsetHighlightDate(null);
+    } else {
+      setOffsetHighlightDate(dateISO);
+    }
   };
 
   const getDisplayWorkouts = useCallback(() => {
@@ -273,14 +293,19 @@ export function WeeklySchedule() {
             const date = weekDates[index];
             const isToday =
               formatDateToISO(date) === formatDateToISO(new Date());
+            const isOffsetHighlighted =
+              offsetHighlightDate === formatDateToISO(date);
 
             return (
               <Card
                 key={day}
-                className={`min-h-60 flex flex-col ${isToday ? "ring-2 ring-primary" : ""}`}
+                className={`min-h-60 flex flex-col cursor-pointer transition-colors ${isToday ? "ring-2 ring-primary" : isOffsetHighlighted ? "ring-2 ring-primary/50" : ""}`}
               >
                 {/* Day Header */}
-                <div className="border-b p-3 shrink-0">
+                <div
+                  className="border-b p-3 shrink-0 "
+                  onClick={() => handleDayClick(date)}
+                >
                   <div className="text-sm font-semibold">{getDayName(day)}</div>
                   <div
                     className={`text-xs ${
@@ -359,6 +384,7 @@ export function WeeklySchedule() {
           dayOfWeek={selectedDay}
           weekStartDate={formatDateToISO(weekStartDate)}
           onSave={handleSaveWorkout}
+          onDelete={handleDeleteWorkout}
           editWorkout={
             editingWorkout
               ? {
