@@ -26,8 +26,18 @@ import { ErrorAlert } from "@/components/alert/ErrorAlert";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { workoutFormSchema, WorkoutFormData } from "@/types/workoutValidation";
 import { DayOfWeek, WorkoutType, HeartRateZone } from "@/types/workout";
-import { useEffect } from "react";
-import { calculateDuration } from "@/lib/utils/pace";
+import { useEffect, useState } from "react";
+import { calculateDuration, calculatePaceFromDuration } from "@/lib/utils/pace";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 interface AddOrEditWorkoutDialogProps {
   open: boolean;
@@ -35,6 +45,7 @@ interface AddOrEditWorkoutDialogProps {
   dayOfWeek: DayOfWeek;
   weekStartDate: string;
   onSave: (workout: WorkoutFormData) => Promise<void>;
+  onDelete?: (workoutId: string) => Promise<void>;
   editWorkout?: {
     id: string;
     heartRateZone: string;
@@ -52,6 +63,7 @@ export function AddWorkoutDialog({
   dayOfWeek,
   onSave,
   editWorkout,
+  onDelete,
 }: AddOrEditWorkoutDialogProps) {
   const {
     loading,
@@ -60,6 +72,8 @@ export function AddWorkoutDialog({
     execute,
     reset: resetAsync,
   } = useAsyncData();
+
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   const {
     register,
@@ -95,16 +109,24 @@ export function AddWorkoutDialog({
 
   useEffect(() => {
     if (editWorkout && open) {
+      resetAsync();
       reset({
         workoutType: editWorkout.workoutType,
         heartRateZone: editWorkout.heartRateZone,
         distance: String(editWorkout.distance),
         duration: editWorkout.duration ? String(editWorkout.duration) : "",
-        pace: "",
+        pace:
+          editWorkout.distance && editWorkout.duration
+            ? calculatePaceFromDuration(
+                editWorkout.distance,
+                editWorkout.duration,
+              )
+            : "",
         title: editWorkout.title || "",
         notes: editWorkout.notes || "",
       });
     } else if (!editWorkout && open) {
+      resetAsync();
       reset({
         workoutType: "",
         heartRateZone: "",
@@ -115,7 +137,7 @@ export function AddWorkoutDialog({
         notes: "",
       });
     }
-  }, [editWorkout, open]);
+  }, [editWorkout, open, resetAsync]);
 
   const onSubmit = async (data: WorkoutFormData) => {
     await execute(async () => {
@@ -133,6 +155,18 @@ export function AddWorkoutDialog({
           onOpenChange(false);
         }, 1000);
       }
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!editWorkout || !onDelete) return;
+
+    await execute(async () => {
+      await onDelete(editWorkout.id);
+      reset();
+      resetAsync();
+      setShowDeleteAlert(false);
+      onOpenChange(false);
     });
   };
 
@@ -160,7 +194,15 @@ export function AddWorkoutDialog({
 
           <div className="grid gap-4 py-4">
             {error && <ErrorAlert message={error} />}
-            {success && <SuccessAlert message="Workout added successfully!" />}
+            {success && (
+              <SuccessAlert
+                message={
+                  editWorkout
+                    ? "Workout updated successfully!"
+                    : "Workout added successfully!"
+                }
+              />
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="workoutType">
@@ -237,7 +279,7 @@ export function AddWorkoutDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="pace">Pacee (min/km)</Label>
+              <Label htmlFor="pace">Pace (min/km)</Label>
               <Input
                 id="pace"
                 type="text"
@@ -297,30 +339,65 @@ export function AddWorkoutDialog({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || (editWorkout && !isDirty)}
-            >
-              {loading
-                ? editWorkout
-                  ? "Saving..."
-                  : "Adding..."
-                : editWorkout
-                  ? "Save Changes"
-                  : "Add Workout"}
-            </Button>
+          <DialogFooter className="flex justify-between">
+            {editWorkout && onDelete && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteAlert(true)}
+                disabled={loading}
+                className="hover:shadow-sm"
+              >
+                Delete
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              {" "}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || (editWorkout && !isDirty)}
+              >
+                {loading
+                  ? editWorkout
+                    ? "Saving..."
+                    : "Adding..."
+                  : editWorkout
+                    ? "Save Changes"
+                    : "Add Workout"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this
+              workout from your schedule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDelete}
+              className="hover:shadow-sm"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

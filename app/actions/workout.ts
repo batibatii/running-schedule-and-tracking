@@ -1,7 +1,12 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth";
-import { getWorkouts, createWorkout, updateWorkout } from "@/lib/dal/workout";
+import {
+  getWorkouts,
+  createWorkout,
+  updateWorkout,
+  deleteWorkout,
+} from "@/lib/dal/workout";
 import { Workout } from "@/types/workout";
 import { DayOfWeek } from "@/types/workout";
 import { WorkoutFormData } from "@/types/workoutValidation";
@@ -62,4 +67,10 @@ export async function updateWorkoutAction(
     weekStartDate,
   });
   return updatedWorkout;
+}
+
+export async function deleteWorkoutAction(workoutId: string) {
+  const user = await requireAuth();
+
+  await deleteWorkout(workoutId, user.id);
 }
