@@ -103,7 +103,8 @@ export function AddWorkoutDialog({
   useEffect(() => {
     if (distance && pace && /^\d{1,2}:\d{2}$/.test(pace)) {
       const calculatedDuration = calculateDuration(Number(distance), pace);
-      setValue("duration", String(calculatedDuration));
+      // Use toLocaleString with 'en-US' to ensure period as decimal separator
+      setValue("duration", calculatedDuration.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }));
     }
   }, [distance, pace, setValue]);
 
@@ -114,7 +115,9 @@ export function AddWorkoutDialog({
         workoutType: editWorkout.workoutType,
         heartRateZone: editWorkout.heartRateZone,
         distance: String(editWorkout.distance),
-        duration: editWorkout.duration ? String(editWorkout.duration) : "",
+        duration: editWorkout.duration
+          ? editWorkout.duration.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })
+          : "",
         pace:
           editWorkout.distance && editWorkout.duration
             ? calculatePaceFromDuration(
@@ -298,6 +301,7 @@ export function AddWorkoutDialog({
               <Input
                 id="duration"
                 type="number"
+                step="0.01"
                 min="0"
                 {...register("duration")}
               />

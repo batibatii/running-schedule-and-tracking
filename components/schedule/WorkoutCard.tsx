@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { WorkoutType, HeartRateZone } from "@/types/workout";
+import { formatDuration } from "@/lib/utils/pace";
 
 interface WorkoutCardProps {
   id: string;
@@ -84,7 +85,7 @@ export function WorkoutCard({
         {/* Metrics: Distance and Duration */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>{distance} km</span>
-          {duration && <span>{duration} min</span>}
+          {duration && <span>{formatDuration(duration)}</span>}
         </div>
 
         {notes && (

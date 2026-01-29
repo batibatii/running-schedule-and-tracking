@@ -34,7 +34,7 @@ export const workoutFormSchema = z.object({
     .string()
     .transform((val) => {
       if (!val || val === "") return undefined;
-      const num = parseInt(val);
+      const num = parseFloat(val);
       if (isNaN(num) || num <= 0) {
         throw new Error("Duration must be a positive number");
       }
