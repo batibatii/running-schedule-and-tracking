@@ -21,6 +21,8 @@ export async function fetchWorkoutsAction(
   return workouts.map((w) => ({
     ...w,
     distance: Number(w.distance) || 0,
+    duration: w.duration ? Number(w.duration) : undefined,
+    pace: w.pace || undefined,
   })) as Workout[];
 }
 

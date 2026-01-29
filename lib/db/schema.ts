@@ -134,7 +134,7 @@ export const weeklyWorkouts = pgTable("weekly_workouts", {
   heartRateZone: varchar("heart_rate_zone", { length: 10 }).notNull(),
 
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
-  duration: integer("duration"), // in minutes
+  duration: decimal("duration", { precision: 10, scale: 2 }), // in minutes
   pace: varchar("pace", { length: 10 }), // "MM:SS" format
 
   dayOfWeek: varchar("day_of_week", { length: 20 }).notNull(),

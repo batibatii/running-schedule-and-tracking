@@ -8,6 +8,13 @@
       "when": 1767882977395,
       "tag": "0000_sloppy_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769628474133,
+      "tag": "0001_cold_skrulls",
+      "breakpoints": true
     }
   ]
 }
