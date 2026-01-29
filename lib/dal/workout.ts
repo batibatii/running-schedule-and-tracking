@@ -42,6 +42,10 @@ export async function createWorkout(
       userId,
       ...validatedData,
       distance: String(validatedData.distance),
+      duration:
+        validatedData.duration !== undefined
+          ? String(validatedData.duration)
+          : undefined,
     })
     .returning();
 
@@ -53,13 +57,14 @@ export async function updateWorkout(
   userId: string,
   validatedData: Partial<CreateWorkoutInputType> & { completed?: boolean },
 ) {
-  const { distance, ...rest } = validatedData;
+  const { distance, duration, ...rest } = validatedData;
 
   const [updatedWorkout] = await db
     .update(weeklyWorkouts)
     .set({
       ...rest,
       ...(distance !== undefined ? { distance: String(distance) } : {}),
+      ...(duration !== undefined ? { duration: String(duration) } : {}),
     })
     .where(
       and(eq(weeklyWorkouts.id, workoutId), eq(weeklyWorkouts.userId, userId)),
