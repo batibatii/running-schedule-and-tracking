@@ -104,7 +104,13 @@ export function AddWorkoutDialog({
     if (distance && pace && /^\d{1,2}:\d{2}$/.test(pace)) {
       const calculatedDuration = calculateDuration(Number(distance), pace);
       // Use toLocaleString with 'en-US' to ensure period as decimal separator
-      setValue("duration", calculatedDuration.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 }));
+      setValue(
+        "duration",
+        calculatedDuration.toLocaleString("en-US", {
+          useGrouping: false,
+          maximumFractionDigits: 2,
+        }),
+      );
     }
   }, [distance, pace, setValue]);
 
@@ -116,7 +122,10 @@ export function AddWorkoutDialog({
         heartRateZone: editWorkout.heartRateZone,
         distance: String(editWorkout.distance),
         duration: editWorkout.duration
-          ? editWorkout.duration.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 2 })
+          ? editWorkout.duration.toLocaleString("en-US", {
+              useGrouping: false,
+              maximumFractionDigits: 2,
+            })
           : "",
         pace:
           editWorkout.distance && editWorkout.duration
@@ -272,6 +281,7 @@ export function AddWorkoutDialog({
                 type="number"
                 step="0.1"
                 min="0"
+                placeholder="e.g., 10"
                 {...register("distance")}
               />
               {errors.distance && (
@@ -395,7 +405,7 @@ export function AddWorkoutDialog({
             <AlertDialogAction
               variant="destructive"
               onClick={handleDelete}
-              className="hover:shadow-sm"
+              className="hover:shadow-sm active:translate-y-0.5"
             >
               Delete
             </AlertDialogAction>
