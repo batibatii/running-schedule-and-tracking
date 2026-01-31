@@ -1,5 +1,8 @@
+"use client";
+
 import { WeeklySchedule } from "@/components/schedule/WeeklySchedule";
 import PillNav from "@/components/PillNav";
+import { logoutAction } from "@/app/actions/auth";
 
 export default function Schedule() {
   return (
@@ -14,7 +17,7 @@ export default function Schedule() {
             { label: "Schedule", href: "/schedule" },
             { label: "Metrics", href: "/workouts" },
             { label: "Profile", href: "/settings" },
-            { label: "Logout", href: "/logout" },
+            { label: "Logout", href: "#", onClick: () => logoutAction() },
           ]}
           activeHref="/schedule"
           baseColor="#f97316"

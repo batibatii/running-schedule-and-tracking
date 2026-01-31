@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { users, type User, type NewUser } from "@/lib/db/schema";
+import { users, type User } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
@@ -14,15 +14,27 @@ export async function getUserById(id: string): Promise<User | undefined> {
 
 export async function createUser(data: {
   email: string;
-  password: string;
+  hashedPassword: string;
 }): Promise<User> {
   const [newUser] = await db
     .insert(users)
     .values({
       email: data.email,
-      password: data.password,
+      password: data.hashedPassword,
     })
     .returning();
 
   return newUser;
+}
+
+export async function markEmailAsVerified(
+  email: string,
+): Promise<User | undefined> {
+  const [updatedUser] = await db
+    .update(users)
+    .set({ emailVerified: new Date() })
+    .where(eq(users.email, email))
+    .returning();
+
+  return updatedUser;
 }

@@ -18,6 +18,10 @@ export const LoginAndSignUpSchema = z.object({
   password: passwordValidation,
 });
 
+export const ResendVerificationSchema = z.object({
+  email: emailValidation,
+});
+
 export const ChangePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
