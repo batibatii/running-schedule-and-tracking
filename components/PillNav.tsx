@@ -8,6 +8,7 @@ export type PillNavItem = {
   label: string;
   href: string;
   ariaLabel?: string;
+  onClick?: () => void; // Add onClick support
 };
 
 export interface PillNavProps {
@@ -383,7 +384,19 @@ const PillNav: React.FC<PillNavProps> = ({
 
               return (
                 <li key={item.href} role="none" className="flex h-full">
-                  {isRouterLink(item.href) ? (
+                  {item.onClick ? (
+                    <button
+                      role="menuitem"
+                      onClick={item.onClick}
+                      className={basePillClasses}
+                      style={pillStyle}
+                      aria-label={item.ariaLabel || item.label}
+                      onMouseEnter={() => handleEnter(i)}
+                      onMouseLeave={() => handleLeave(i)}
+                    >
+                      {PillContent}
+                    </button>
+                  ) : isRouterLink(item.href) ? (
                     <Link
                       role="menuitem"
                       href={item.href}
