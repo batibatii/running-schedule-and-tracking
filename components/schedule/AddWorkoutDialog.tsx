@@ -232,6 +232,7 @@ export function AddWorkoutDialog({
                 <SelectContent>
                   <SelectItem value="easy">Easy Run</SelectItem>
                   <SelectItem value="tempo">Tempo Run</SelectItem>
+                  <SelectItem value="interval">Interval Training</SelectItem>
                   <SelectItem value="long">Long Run</SelectItem>
                   <SelectItem value="recovery">Recovery Run</SelectItem>
                   <SelectItem value="race">Race</SelectItem>
