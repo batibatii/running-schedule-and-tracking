@@ -32,6 +32,7 @@ function getWorkoutTypeLabel(type: WorkoutType): string {
   const labels: Record<WorkoutType, string> = {
     easy: "Easy Run",
     tempo: "Tempo",
+    interval: "Intervals",
     long: "Long Run",
     recovery: "Recovery Run",
     race: "Race",
@@ -65,7 +66,7 @@ export function WorkoutCard({
       className="cursor-pointer hover:shadow-md transition-shadow h-25"
       onClick={onClick}
     >
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-2.5 space-y-1.5 h-full overflow-y-auto">
         {/* Header: Type and Zone Badge */}
         <div className="flex items-center justify-between">
           <span className="font-medium text-sm">
@@ -89,7 +90,7 @@ export function WorkoutCard({
         </div>
 
         {notes && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{notes}</p>
+          <p className="text-xs text-muted-foreground">{notes}</p>
         )}
       </CardContent>
     </Card>

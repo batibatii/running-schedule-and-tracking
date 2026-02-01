@@ -8,7 +8,7 @@ export type HeartRateZone =
   | "zone-4"
   | "zone-5";
 
-export type WorkoutType = "easy" | "tempo" | "long" | "recovery" | "race";
+export type WorkoutType = "easy" | "tempo" | "long" | "recovery" | "race" | "interval";
 
 export type DayOfWeek =
   | "monday"

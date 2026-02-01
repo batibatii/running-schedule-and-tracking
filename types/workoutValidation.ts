@@ -5,8 +5,8 @@ export const workoutFormSchema = z.object({
     .string()
     .min(1, "Please select a workout type")
     .refine(
-      (val): val is "easy" | "tempo" | "long" | "recovery" | "race" =>
-        ["easy", "tempo", "long", "recovery", "race"].includes(val),
+      (val): val is "easy" | "tempo" | "long" | "recovery" | "race" | "interval" =>
+        ["easy", "tempo", "long", "recovery", "race", "interval"].includes(val),
       { message: "Invalid workout type" },
     ),
 
