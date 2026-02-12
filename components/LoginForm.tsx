@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StravaIcon } from "@/components/StravaIcon";
 import {
   LoginAndSignUpType,
@@ -57,7 +56,7 @@ export default function LoginForm() {
       setError(undefined);
       window.history.replaceState({}, "", "/");
     }
-  }, []);
+  }, [setError, setSuccess]);
 
   const onSubmit = async (data: LoginAndSignUpType) => {
     setNeedVerification(false);
@@ -147,7 +146,7 @@ export default function LoginForm() {
                 📧 Email Verification Required
               </h3>
               <p className="text-sm text-orange-800">
-                We've sent a verification email to:
+                We&apos;ve sent a verification email to:
               </p>
               <p className="text-sm font-medium text-orange-900 bg-white px-3 py-2 rounded border border-orange-200">
                 {unverifiedEmail}

@@ -149,7 +149,7 @@ export function AddWorkoutDialog({
         notes: "",
       });
     }
-  }, [editWorkout, open, resetAsync]);
+  }, [editWorkout, open, reset, resetAsync]);
 
   const onSubmit = async (data: WorkoutFormData) => {
     await execute(async () => {

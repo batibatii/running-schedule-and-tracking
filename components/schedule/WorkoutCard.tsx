@@ -52,7 +52,6 @@ function getZoneLabel(zone: HeartRateZone): string {
 }
 
 export function WorkoutCard({
-  id,
   workoutType,
   heartRateZone,
   distance,

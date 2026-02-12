@@ -75,7 +75,7 @@ export const authOptions: NextAuthOptions = {
           .from(users)
           .where(eq(users.email, token.email as string));
         if (dbUser) {
-          token.emailVerified === dbUser.emailVerified;
+          token.emailVerified = dbUser.emailVerified;
         }
       }
 
