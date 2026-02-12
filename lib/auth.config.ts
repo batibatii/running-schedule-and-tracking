@@ -35,11 +35,15 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await verifyPassword(
           credentials.password,
-          user.password
+          user.password,
         );
 
         if (!isValid) {
           return null;
+        }
+
+        if (!user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
         }
 
         return {
@@ -58,12 +62,23 @@ export const authOptions: NextAuthOptions = {
     signIn: "/",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id;
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
       }
+
+      if (trigger === "update" && token.email) {
+        const [dbUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, token.email as string));
+        if (dbUser) {
+          token.emailVerified === dbUser.emailVerified;
+        }
+      }
+
       if (account?.provider === "strava") {
         token.stravaAccessToken = account.access_token;
         token.stravaRefreshToken = account.refresh_token;
@@ -74,6 +89,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.emailVerified = token.emailVerified as Date | null;
       }
       return session;
     },

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StravaIcon } from "@/components/StravaIcon";
 import {
   LoginAndSignUpType,
@@ -15,7 +17,7 @@ import { SuccessAlert } from "./alert/SuccessAlert";
 import { signIn } from "next-auth/react";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { useRouter } from "next/navigation";
-import { signUpAction } from "@/app/actions/auth";
+import { signUpAction, resendVerificationAction } from "@/app/actions/auth";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -27,9 +29,40 @@ export default function LoginForm() {
     resolver: zodResolver(LoginAndSignUpSchema),
   });
 
-  const { loading, error, success, execute } = useAsyncData();
+  const { loading, error, success, execute, setError, setSuccess } =
+    useAsyncData();
+
+  const [needVerification, setNeedVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+
+  const {
+    loading: resendLoading,
+    error: resendError,
+    success: resendSuccess,
+    execute: executeResend,
+  } = useAsyncData();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    const verified = params.get("verified");
+
+    if (error === "verification_expired") {
+      setError("Your verification link has expired. Please request a new one.");
+    }
+
+    if (verified === "true") {
+      // Don't show "Login successful", clear any states
+      setSuccess(false);
+      setError(undefined);
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
 
   const onSubmit = async (data: LoginAndSignUpType) => {
+    setNeedVerification(false);
+    setUnverifiedEmail("");
+
     await execute(async () => {
       const result = await signIn("credentials", {
         email: data.email,
@@ -37,6 +70,11 @@ export default function LoginForm() {
         redirect: false,
       });
       if (result?.error) {
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          setNeedVerification(true);
+          setUnverifiedEmail(data.email);
+          throw new Error("Please verify your email before logging in");
+        }
         throw new Error(result.error);
       }
 
@@ -54,25 +92,28 @@ export default function LoginForm() {
         if (!result.success) {
           throw new Error(result.message);
         }
-
-        const loginResult = await signIn("credentials", {
-          email: data.email,
-          password: data.password,
-          redirect: false,
-        });
-
-        if (loginResult?.error) {
-          throw new Error(
-            "Account created but login failed. Please try logging in.",
-          );
-        }
-
-        setTimeout(() => {
-          router.push("/schedule");
-        }, 1500);
+        setNeedVerification(true);
+        setUnverifiedEmail(data.email);
       });
     });
     formData();
+  };
+
+  const handleResendVerification = async () => {
+    await executeResend(async () => {
+      const result = await resendVerificationAction(unverifiedEmail);
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+    });
+  };
+
+  const handleBackToLogin = () => {
+    setNeedVerification(false);
+    setUnverifiedEmail("");
+    setError(undefined);
+    setSuccess(false);
   };
 
   return (
@@ -81,77 +122,133 @@ export default function LoginForm() {
         <h2 className="text-3xl font-bold tracking-tight">
           Track Your Running!
         </h2>
-        <p className="text-muted-foreground">Enter your credentials to login</p>
+        <p className="text-muted-foreground">
+          {needVerification ? "Verify your email to continue" : "Enter your credentials to login"}
+        </p>
       </div>
 
-      {error && <ErrorAlert message={error} />}
-      {success && (
+      {/* Show error alerts */}
+      {error && !needVerification && <ErrorAlert message={error} />}
+
+      {/* Show success only when NOT in verification mode */}
+      {success && !needVerification && (
         <SuccessAlert
           message="Login successful! Redirecting..."
           className="bg-white pl-2"
         />
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="name@example.com"
-            {...register("email")}
-          />
-          {errors.email && <ErrorAlert message={errors.email.message} />}
-        </div>
+      {/* Email Verification Card - Replaces login form */}
+      {needVerification ? (
+        <div className="space-y-4">
+          <div className="p-6 bg-orange-50 border border-orange-200 rounded-lg space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-orange-900">
+                📧 Email Verification Required
+              </h3>
+              <p className="text-sm text-orange-800">
+                We've sent a verification email to:
+              </p>
+              <p className="text-sm font-medium text-orange-900 bg-white px-3 py-2 rounded border border-orange-200">
+                {unverifiedEmail}
+              </p>
+              <p className="text-sm text-orange-800 mt-2">
+                Please check your inbox and click the verification link to activate your account.
+              </p>
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            {...register("password")}
-          />
-          {errors.password && <ErrorAlert message={errors.password.message} />}
-        </div>
+            {resendSuccess && (
+              <SuccessAlert message="Verification email sent! Check your inbox." />
+            )}
 
-        <div className="space-y-2 pt-2">
-          <Button
-            type="submit"
-            className="w-full "
-            disabled={isSubmitting || loading}
-          >
-            {isSubmitting || loading ? "Logging in..." : "Login"}
-          </Button>
+            {resendError && <ErrorAlert message={resendError} />}
+
+            <div className="space-y-2 pt-2">
+              <Button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+                className="w-full"
+              >
+                {resendLoading ? "Sending..." : "Resend Verification Email"}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBackToLogin}
+                className="w-full"
+              >
+                ← Back to Login
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Login Form - Hidden when verification is needed
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              {...register("email")}
+            />
+            {errors.email && <ErrorAlert message={errors.email.message} />}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              {...register("password")}
+            />
+            {errors.password && <ErrorAlert message={errors.password.message} />}
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || loading}
+            >
+              {isSubmitting || loading ? "Logging in..." : "Login"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleSignUp}
+              disabled={loading}
+            >
+              Sign Up
+            </Button>
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <div className="border flex-1"></div>
+            <span className="text-sm text-muted-foreground">OR</span>
+            <div className="border flex-1"></div>
+          </div>
 
           <Button
             type="button"
             variant="outline"
             className="w-full"
-            onClick={handleSignUp}
+            onClick={() => {
+              // TODO: Add Strava OAuth login logic here
+              console.log("Strava login clicked");
+            }}
           >
-            Sign Up
+            <StravaIcon className="w-5 h-5" />
+            Continue with Strava
           </Button>
-        </div>
-        <div className="flex gap-2 items-center">
-          <div className="border flex-1"></div>
-          <span className="text-sm text-muted-foreground">OR</span>
-          <div className="border flex-1"></div>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => {
-            // TODO: Add Strava OAuth login logic here
-            console.log("Strava login clicked");
-          }}
-        >
-          <StravaIcon className="w-5 h-5" />
-          Continue with Strava
-        </Button>
-      </form>
+        </form>
+      )}
     </div>
   );
 }

@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
 
     const verifiedEmail = await verifyToken(token);
 
-    if (verifiedEmail === null)
-      return NextResponse.json(
-        { error: "Invalid or expired verification token" },
-        { status: 400 },
-      );
+    if (verifiedEmail === null) {
+      const loginUrl = new URL("/", request.url);
+      loginUrl.searchParams.set("error", "verification_expired");
+      return NextResponse.redirect(loginUrl);
+    }
 
     const updatedUser = await markEmailAsVerified(verifiedEmail);
 
