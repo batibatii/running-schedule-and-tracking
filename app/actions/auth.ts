@@ -7,6 +7,9 @@ import { createVerificationToken } from "@/lib/verification-token";
 import { sendVerificationEmail } from "@/lib/email";
 import { ResendVerificationSchema } from "@/types/authValidation";
 import bcrypt from "bcrypt";
+import { db } from "@/lib/db";
+import { verificationTokens } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 interface AuthResult {
   success: boolean;
@@ -93,6 +96,23 @@ export async function resendVerificationAction(
         success: false,
         message: "Email is already verified",
       };
+    }
+
+    const existingToken = await db
+      .select()
+      .from(verificationTokens)
+      .where(eq(verificationTokens.identifier, email));
+
+    if (existingToken.length > 0) {
+      const tokenAge = Date.now() - existingToken[0].createdAt.getTime();
+      const ONE_MINUTE = 60 * 1000;
+
+      if (tokenAge < ONE_MINUTE) {
+        return {
+          success: false,
+          message: "Please wait a minute before requesting another email",
+        };
+      }
     }
 
     const token = await createVerificationToken(email);
