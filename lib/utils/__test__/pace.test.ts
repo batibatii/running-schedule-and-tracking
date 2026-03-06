@@ -4,7 +4,7 @@ import {
   minutesToPace,
   formatDuration,
   calculatePaceFromDuration,
-} from "../../lib/utils/pace";
+} from "../pace";
 
 describe("pace utilities", () => {
   describe("paceToMinutes", () => {

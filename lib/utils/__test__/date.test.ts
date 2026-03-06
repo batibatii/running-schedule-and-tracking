@@ -5,7 +5,7 @@ import {
   formatDateDisplay,
   getDayOfWeek,
   getDayName,
-} from "../../lib/utils/date";
+} from "../date";
 import { DayOfWeek } from "@/types/workout";
 
 describe("date utilities", () => {
