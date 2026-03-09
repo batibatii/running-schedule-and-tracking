@@ -1,0 +1,1 @@
+ALTER TABLE "weekly_workouts" ADD COLUMN "sport" varchar(50) DEFAULT 'running' NOT NULL;

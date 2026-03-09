@@ -1,11 +1,15 @@
 import { z } from "zod";
+import { SPORTS } from "./workout";
 
 export const workoutFormSchema = z.object({
+  sport: z.enum(SPORTS).default("running"),
   workoutType: z
     .string()
     .min(1, "Please select a workout type")
     .refine(
-      (val): val is "easy" | "tempo" | "long" | "recovery" | "race" | "interval" =>
+      (
+        val,
+      ): val is "easy" | "tempo" | "long" | "recovery" | "race" | "interval" =>
         ["easy", "tempo", "long", "recovery", "race", "interval"].includes(val),
       { message: "Invalid workout type" },
     ),
@@ -53,5 +57,42 @@ export const workoutFormSchema = z.object({
 
   notes: z.string().optional(),
 });
+
+export const createWorkoutSchema = workoutFormSchema.extend({
+  dayOfWeek: z.enum([
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ]),
+  weekStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  sport: z.enum(SPORTS),
+});
+
+export const updateWorkoutSchema = workoutFormSchema.partial().extend({
+  dayOfWeek: z
+    .enum([
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ])
+    .optional(),
+  weekStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format")
+    .optional(),
+  sport: z.enum(SPORTS).optional(),
+  completed: z.boolean().optional(),
+});
+
+export type UpdateWorkoutInputType = z.infer<typeof updateWorkoutSchema>;
+export type CreateWorkoutInputType = z.infer<typeof createWorkoutSchema>;
 
 export type WorkoutFormData = z.infer<typeof workoutFormSchema>;

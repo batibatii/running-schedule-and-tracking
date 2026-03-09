@@ -15,6 +15,13 @@
       "when": 1769628474133,
       "tag": "0001_cold_skrulls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773051935813,
+      "tag": "0002_wild_gorilla_man",
+      "breakpoints": true
     }
   ]
 }

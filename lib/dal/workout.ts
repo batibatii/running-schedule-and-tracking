@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { weeklyWorkouts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { CreateWorkoutInputType } from "@/types/workout";
+import { CreateWorkoutInputType } from "@/types/workoutValidation";
 
 export async function getWorkouts(
   userId: string,
