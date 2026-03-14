@@ -25,7 +25,7 @@ import { SuccessAlert } from "@/components/alert/SuccessAlert";
 import { ErrorAlert } from "@/components/alert/ErrorAlert";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { workoutFormSchema, WorkoutFormData } from "@/types/workoutValidation";
-import { DayOfWeek, WorkoutType, HeartRateZone } from "@/types/workout";
+import { DayOfWeek, WorkoutType, HeartRateZone, Sport, SPORTS } from "@/types/workout";
 import { useEffect, useState } from "react";
 import { calculateDuration, calculatePaceFromDuration } from "@/lib/utils/pace";
 import {
@@ -48,6 +48,7 @@ interface AddOrEditWorkoutDialogProps {
   onDelete?: (workoutId: string) => Promise<void>;
   editWorkout?: {
     id: string;
+    sport: Sport;
     heartRateZone: string;
     workoutType: WorkoutType;
     distance: number;
@@ -85,6 +86,7 @@ export function AddWorkoutDialog({
   } = useForm({
     resolver: zodResolver(workoutFormSchema),
     defaultValues: {
+      sport: "running",
       workoutType: "",
       heartRateZone: "",
       distance: "",
@@ -95,6 +97,7 @@ export function AddWorkoutDialog({
     },
   });
 
+  const sport = watch("sport");
   const workoutType = watch("workoutType");
   const heartRateZone = watch("heartRateZone");
   const distance = watch("distance");
@@ -118,6 +121,7 @@ export function AddWorkoutDialog({
     if (editWorkout && open) {
       resetAsync();
       reset({
+        sport: editWorkout.sport,
         workoutType: editWorkout.workoutType,
         heartRateZone: editWorkout.heartRateZone,
         distance: String(editWorkout.distance),
@@ -140,6 +144,7 @@ export function AddWorkoutDialog({
     } else if (!editWorkout && open) {
       resetAsync();
       reset({
+        sport: "running",
         workoutType: "",
         heartRateZone: "",
         distance: "",
@@ -215,6 +220,34 @@ export function AddWorkoutDialog({
                 }
               />
             )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="sport">
+                Sport <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={sport}
+                onValueChange={(value: string) =>
+                  setValue("sport", value as Sport, { shouldDirty: true })
+                }
+              >
+                <SelectTrigger id="sport">
+                  <SelectValue placeholder="Select sport" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPORTS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.sport && (
+                <p className="text-sm text-destructive pl-1">
+                  {errors.sport.message}
+                </p>
+              )}
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="workoutType">

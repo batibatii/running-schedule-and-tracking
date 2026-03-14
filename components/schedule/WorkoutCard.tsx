@@ -1,11 +1,12 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { WorkoutType, HeartRateZone } from "@/types/workout";
+import { WorkoutType, HeartRateZone, Sport } from "@/types/workout";
 import { formatDuration } from "@/lib/utils/pace";
 
 interface WorkoutCardProps {
   id: string;
+  sport: Sport;
   workoutType: WorkoutType;
   heartRateZone: HeartRateZone;
   distance: number;
@@ -40,6 +41,15 @@ function getWorkoutTypeLabel(type: WorkoutType): string {
   return labels[type];
 }
 
+function getSportLabel(sport: Sport): string {
+  const labels: Record<Sport, string> = {
+    running: "Run",
+    cycling: "Cycle",
+    swimming: "Swim",
+  };
+  return labels[sport];
+}
+
 function getZoneLabel(zone: HeartRateZone): string {
   const labels: Record<HeartRateZone, string> = {
     "zone-1": "Z1",
@@ -52,6 +62,7 @@ function getZoneLabel(zone: HeartRateZone): string {
 }
 
 export function WorkoutCard({
+  sport,
   workoutType,
   heartRateZone,
   distance,
@@ -69,7 +80,7 @@ export function WorkoutCard({
         {/* Header: Type and Zone Badge */}
         <div className="flex items-center justify-between">
           <span className="font-medium text-sm">
-            {getWorkoutTypeLabel(workoutType)}
+            {getSportLabel(sport)} · {getWorkoutTypeLabel(workoutType)}
           </span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${getZoneColor(heartRateZone)}`}

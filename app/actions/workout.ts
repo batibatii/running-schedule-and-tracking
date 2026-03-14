@@ -37,6 +37,7 @@ export async function createWorkoutAction(
     ...data,
     dayOfWeek,
     weekStartDate,
+    
   });
 
   return workout;

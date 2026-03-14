@@ -337,6 +337,7 @@ export function WeeklySchedule() {
                             >
                               <WorkoutCard
                                 id={workout.id}
+                                sport={workout.sport}
                                 workoutType={workout.workoutType}
                                 heartRateZone={workout.heartRateZone}
                                 distance={workout.distance ?? 0}
@@ -389,6 +390,7 @@ export function WeeklySchedule() {
             editingWorkout
               ? {
                   id: editingWorkout.id,
+                  sport: editingWorkout.sport,
                   workoutType: editingWorkout.workoutType,
                   heartRateZone: editingWorkout.heartRateZone,
                   distance: editingWorkout.distance ?? 0,
@@ -409,6 +411,7 @@ export function WeeklySchedule() {
                   );
                   return {
                     id: workout?.id || "",
+                    sport: workout?.sport || "running",
                     workoutType: workout?.workoutType || "easy",
                     heartRateZone: workout?.heartRateZone || "zone-1",
                     distance: workout?.distance ?? 0,
