@@ -7,11 +7,13 @@ import {
   WorkoutType,
   HeartRateZone,
 } from "@/types/workout";
-import { Pill, PartialWorkoutFields } from "@/types/playground";
+import { Pill, PillFieldType, PartialWorkoutFields } from "@/types/playground";
+import { calculateDuration } from "@/lib/utils/pace";
 import { toast } from "sonner";
 import {
   createWorkoutAction,
   updateWorkoutDayAction,
+  updateWorkoutFieldAction,
   deleteWorkoutAction,
 } from "@/app/actions/workout";
 
@@ -19,6 +21,7 @@ interface UseDragDropManagerProps {
   workouts: Workout[] | null;
   weekStartDateISO: string;
   removePill: (id: string) => void;
+  addPill: (fieldType: PillFieldType, value: string | number, label: string) => void;
   resolvePillToFields: (pill: Pill) => PartialWorkoutFields;
   getWorkoutDefaults: (fields: PartialWorkoutFields) => {
     sport: Sport;
@@ -34,6 +37,7 @@ export function useDragDropManager({
   workouts,
   weekStartDateISO,
   removePill,
+  addPill,
   resolvePillToFields,
   getWorkoutDefaults,
   refreshWorkouts,
@@ -88,6 +92,57 @@ export function useDragDropManager({
           refreshWorkouts();
         } catch {
           toast.error("Failed to create workout");
+        }
+        return;
+      }
+
+      if (sourceType === "pill" && targetType === "workout-card") {
+        const pill = active.data.current?.pill as Pill;
+        const targetWorkoutId = over.data.current?.workoutId as string;
+        const workout = workouts?.find((w) => w.id === targetWorkoutId);
+
+        if (!workout) return;
+
+        const fields = resolvePillToFields(pill);
+        const fieldKey = Object.keys(fields)[0] as keyof typeof fields;
+        const oldValue = workout[fieldKey];
+        const newValue = fields[fieldKey];
+
+        const updateFields = { ...fields } as Record<string, unknown>;
+        if (fieldKey === "pace" && workout.distance) {
+          updateFields.duration = calculateDuration(workout.distance, fields.pace!);
+        } else if (fieldKey === "distance" && workout.pace) {
+          updateFields.duration = calculateDuration(fields.distance!, workout.pace);
+        }
+
+        try {
+          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
+          removePill(pill.id);
+          refreshWorkouts();
+
+          if (oldValue !== undefined && oldValue !== null && oldValue !== newValue) {
+            toast.success(`Updated ${fieldKey} to "${newValue}"`, {
+              action: {
+                label: "Undo",
+                onClick: async () => {
+                  try {
+                    const undoFields: Record<string, unknown> = { [fieldKey]: oldValue };
+                    if (updateFields.duration !== undefined) {
+                      undoFields.duration = workout.duration;
+                    }
+                    await updateWorkoutFieldAction(targetWorkoutId, undoFields);
+                    addPill(pill.fieldType, pill.value, pill.label);
+                    refreshWorkouts();
+                  } catch {
+                    toast.error("Failed to undo");
+                  }
+                },
+              },
+              duration: 5000,
+            });
+          }
+        } catch {
+          toast.error("Failed to update workout");
         }
         return;
       }
@@ -169,6 +224,7 @@ export function useDragDropManager({
       workouts,
       weekStartDateISO,
       removePill,
+      addPill,
       resolvePillToFields,
       getWorkoutDefaults,
       refreshWorkouts,

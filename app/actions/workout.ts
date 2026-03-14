@@ -72,6 +72,16 @@ export async function updateWorkoutAction(
   return updatedWorkout;
 }
 
+export async function updateWorkoutFieldAction(
+  workoutId: string,
+  fields: Partial<WorkoutFormData>,
+) {
+  const user = await requireAuth();
+
+  const updatedWorkout = await updateWorkout(workoutId, user.id, fields);
+  return updatedWorkout;
+}
+
 export async function deleteWorkoutAction(workoutId: string) {
   const user = await requireAuth();
 

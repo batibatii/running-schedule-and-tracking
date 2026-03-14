@@ -53,6 +53,7 @@ interface AddOrEditWorkoutDialogProps {
     workoutType: WorkoutType;
     distance: number;
     duration?: number;
+    pace?: string;
     title?: string;
     notes?: string;
   };
@@ -132,12 +133,13 @@ export function AddWorkoutDialog({
             })
           : "",
         pace:
-          editWorkout.distance && editWorkout.duration
+          editWorkout.pace ||
+          (editWorkout.distance && editWorkout.duration
             ? calculatePaceFromDuration(
                 editWorkout.distance,
                 editWorkout.duration,
               )
-            : "",
+            : ""),
         title: editWorkout.title || "",
         notes: editWorkout.notes || "",
       });

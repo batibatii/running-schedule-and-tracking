@@ -15,7 +15,7 @@ import { DayOfWeek, Workout } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { DroppableDay } from "./DroppableDay";
-import { DraggableWorkoutCard } from "./DraggableWorkoutCard";
+import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
 import { WorkoutFormData } from "@/types/workoutValidation";
@@ -34,6 +34,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  pointerWithin,
 } from "@dnd-kit/core";
 
 export function WeeklySchedule() {
@@ -92,6 +93,7 @@ export function WeeklySchedule() {
     workouts,
     weekStartDateISO,
     removePill,
+    addPill,
     resolvePillToFields,
     getWorkoutDefaults,
     refreshWorkouts,
@@ -200,6 +202,7 @@ export function WeeklySchedule() {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -292,7 +295,7 @@ export function WeeklySchedule() {
                                 formatDateToISO(weekStartDate),
                           )
                           .map((workout) => (
-                            <DraggableWorkoutCard
+                            <DroppableWorkoutCard
                               key={workout.id}
                               id={workout.id}
                             >
@@ -307,7 +310,7 @@ export function WeeklySchedule() {
                                 notes={workout.notes}
                                 onClick={() => handleOpenDialog(day, workout)}
                               />
-                            </DraggableWorkoutCard>
+                            </DroppableWorkoutCard>
                           ))}
 
                         {getDisplayWorkouts().filter(
@@ -365,6 +368,7 @@ export function WeeklySchedule() {
                   heartRateZone: editingWorkout.heartRateZone,
                   distance: editingWorkout.distance ?? 0,
                   duration: editingWorkout.duration,
+                  pace: editingWorkout.pace,
                   title: editingWorkout.title,
                   notes: editingWorkout.notes,
                 }
