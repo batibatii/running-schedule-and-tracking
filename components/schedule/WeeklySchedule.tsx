@@ -14,6 +14,8 @@ import {
 import { DayOfWeek, Workout } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
+import { DroppableDay } from "./DroppableDay";
+import { DraggableWorkoutCard } from "./DraggableWorkoutCard";
 import { WorkoutFormData } from "@/types/workoutValidation";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import {
@@ -32,7 +34,6 @@ import {
   DragStartEvent,
 } from "@dnd-kit/core";
 import { updateWorkoutDayAction } from "@/app/actions/workout";
-import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 export function WeeklySchedule() {
   // Week navigation state (0 = this week, -1 = last week, 1 = next week)
@@ -197,44 +198,6 @@ export function WeeklySchedule() {
   const handleCancelChanges = () => {
     setPendingChanges(new Map());
   };
-
-  function DroppableDay({
-    day,
-    children,
-  }: {
-    day: DayOfWeek;
-    children: React.ReactNode;
-  }) {
-    const { setNodeRef } = useDroppable({ id: day });
-
-    return <div ref={setNodeRef}>{children}</div>;
-  }
-
-  function DraggableWorkoutCard({
-    id,
-    children,
-  }: {
-    id: string;
-    children: React.ReactNode;
-  }) {
-    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-      id,
-    });
-
-    return (
-      <div
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        style={{
-          opacity: isDragging ? 0.5 : 1,
-          cursor: "grab",
-        }}
-      >
-        {children}
-      </div>
-    );
-  }
 
   return (
     <DndContext
