@@ -3,6 +3,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { WorkoutType, HeartRateZone, Sport } from "@/types/workout";
 import { formatDuration } from "@/lib/utils/pace";
+import {
+  getSportLabel,
+  getWorkoutTypeLabel,
+  getZoneLabel,
+  getZoneColor,
+} from "@/lib/utils/workoutLabels";
 
 interface WorkoutCardProps {
   id: string;
@@ -16,49 +22,6 @@ interface WorkoutCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
-}
-
-function getZoneColor(zone: HeartRateZone): string {
-  const colors: Record<HeartRateZone, string> = {
-    "zone-1": "bg-cyan-100 text-cyan-800",
-    "zone-2": "bg-green-100 text-green-800",
-    "zone-3": "bg-yellow-100 text-yellow-800",
-    "zone-4": "bg-orange-100 text-orange-800",
-    "zone-5": "bg-red-100 text-red-800",
-  };
-  return colors[zone];
-}
-
-function getWorkoutTypeLabel(type: WorkoutType): string {
-  const labels: Record<WorkoutType, string> = {
-    easy: "Easy Run",
-    tempo: "Tempo",
-    interval: "Intervals",
-    long: "Long Run",
-    recovery: "Recovery Run",
-    race: "Race",
-  };
-  return labels[type];
-}
-
-function getSportLabel(sport: Sport): string {
-  const labels: Record<Sport, string> = {
-    running: "Run",
-    cycling: "Cycle",
-    swimming: "Swim",
-  };
-  return labels[sport];
-}
-
-function getZoneLabel(zone: HeartRateZone): string {
-  const labels: Record<HeartRateZone, string> = {
-    "zone-1": "Z1",
-    "zone-2": "Z2",
-    "zone-3": "Z3",
-    "zone-4": "Z4",
-    "zone-5": "Z5",
-  };
-  return labels[zone];
 }
 
 export function WorkoutCard({

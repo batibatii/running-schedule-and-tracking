@@ -7,12 +7,25 @@ export type PillFieldType =
   | "distance"
   | "pace";
 
+export type ComposeType = "pill" | "group";
+
 export interface Pill {
   id: string;
+  kind: ComposeType & "pill";
   fieldType: PillFieldType;
-  value: string | number; // e.g., "running", "easy", 5, "5:45"
-  label: string; // display text: "Run", "Easy Run", "5 KM", "5:45"
+  value: string | number;
+  label: string;
 }
+
+export interface PillGroup {
+  id: string;
+  kind: ComposeType & "group";
+  fields: PartialWorkoutFields;
+  pills: Pill[];
+  createdAt: number;
+}
+
+export type PlaygroundItem = Pill | PillGroup;
 
 export interface PartialWorkoutFields {
   sport?: Sport;
@@ -25,8 +38,8 @@ export interface PartialWorkoutFields {
 export interface Preset {
   id: string;
   label: string;
-  pills: Pill[];
+  fields: PartialWorkoutFields;
   isCustom: boolean;
 }
 
-export type DragItemType = "workout" | "pill" | "preset";
+export type DragItemType = "workout" | "pill" | "group" | "preset";
