@@ -7,7 +7,12 @@ import {
   WorkoutType,
   HeartRateZone,
 } from "@/types/workout";
-import { Pill, PillFieldType, PartialWorkoutFields } from "@/types/playground";
+import {
+  Pill,
+  PillFieldType,
+  PartialWorkoutFields,
+  DragItemType,
+} from "@/types/playground";
 import { calculateDuration } from "@/lib/utils/pace";
 import { toast } from "sonner";
 import {
@@ -21,7 +26,11 @@ interface UseDragDropManagerProps {
   workouts: Workout[] | null;
   weekStartDateISO: string;
   removePill: (id: string) => void;
-  addPill: (fieldType: PillFieldType, value: string | number, label: string) => void;
+  addPill: (
+    fieldType: PillFieldType,
+    value: string | number,
+    label: string,
+  ) => void;
   resolvePillToFields: (pill: Pill) => PartialWorkoutFields;
   getWorkoutDefaults: (fields: PartialWorkoutFields) => {
     sport: Sport;
@@ -43,7 +52,9 @@ export function useDragDropManager({
   refreshWorkouts,
 }: UseDragDropManagerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeDragType, setActiveDragType] = useState<string | null>(null);
+  const [activeDragType, setActiveDragType] = useState<DragItemType | null>(
+    null,
+  );
   const [pendingChanges, setPendingChanges] = useState<Map<string, DayOfWeek>>(
     new Map(),
   );
@@ -110,9 +121,15 @@ export function useDragDropManager({
 
         const updateFields = { ...fields } as Record<string, unknown>;
         if (fieldKey === "pace" && workout.distance) {
-          updateFields.duration = calculateDuration(workout.distance, fields.pace!);
+          updateFields.duration = calculateDuration(
+            workout.distance,
+            fields.pace!,
+          );
         } else if (fieldKey === "distance" && workout.pace) {
-          updateFields.duration = calculateDuration(fields.distance!, workout.pace);
+          updateFields.duration = calculateDuration(
+            fields.distance!,
+            workout.pace,
+          );
         }
 
         try {
@@ -120,13 +137,19 @@ export function useDragDropManager({
           removePill(pill.id);
           refreshWorkouts();
 
-          if (oldValue !== undefined && oldValue !== null && oldValue !== newValue) {
+          if (
+            oldValue !== undefined &&
+            oldValue !== null &&
+            oldValue !== newValue
+          ) {
             toast.success(`Updated ${fieldKey} to "${newValue}"`, {
               action: {
                 label: "Undo",
                 onClick: async () => {
                   try {
-                    const undoFields: Record<string, unknown> = { [fieldKey]: oldValue };
+                    const undoFields: Record<string, unknown> = {
+                      [fieldKey]: oldValue,
+                    };
                     if (updateFields.duration !== undefined) {
                       undoFields.duration = workout.duration;
                     }

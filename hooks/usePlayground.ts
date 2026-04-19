@@ -1,8 +1,14 @@
-import { useCallback, useSyncExternalStore } from "react";
-import { Pill, PillFieldType, PartialWorkoutFields } from "@/types/playground";
+import { useSyncExternalStore } from "react";
+import {
+  Pill,
+  PillGroup,
+  PillFieldType,
+  PlaygroundItem,
+  PartialWorkoutFields,
+} from "@/types/playground";
 import { Sport, WorkoutType, HeartRateZone } from "@/types/workout";
 
-const STORAGE_KEY = "playground-pills";
+const STORAGE_KEY = "playground-items";
 
 const WORKOUT_DEFAULTS = {
   sport: "running" as Sport,
@@ -12,12 +18,11 @@ const WORKOUT_DEFAULTS = {
 
 // Cached snapshot to ensure referential stability between calls
 let cachedRaw: string | null = null;
-let cachedPills: Pill[] = [];
+let cachedItems: PlaygroundItem[] = [];
 
 let listeners: Array<() => void> = [];
 
 function emitChange() {
-  // Invalidate cache so next getSnapshot reads fresh data
   cachedRaw = null;
   for (const listener of listeners) {
     listener();
@@ -31,84 +36,114 @@ function subscribe(callback: () => void) {
   };
 }
 
-function getSnapshot(): Pill[] {
+function getSnapshot(): PlaygroundItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw !== cachedRaw) {
       cachedRaw = raw;
-      cachedPills = raw ? JSON.parse(raw) : [];
+      cachedItems = raw ? JSON.parse(raw) : [];
     }
-    return cachedPills;
+    return cachedItems;
   } catch {
-    return cachedPills;
+    return cachedItems;
   }
 }
 
-const emptyPills: Pill[] = [];
-function getServerSnapshot(): Pill[] {
-  return emptyPills;
+const emptyItems: PlaygroundItem[] = [];
+function getServerSnapshot(): PlaygroundItem[] {
+  return emptyItems;
 }
 
-function writePills(pills: Pill[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pills));
+function writeItems(items: PlaygroundItem[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   emitChange();
 }
 
 export function usePlayground() {
-  const pills = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const addPill = useCallback(
-    (fieldType: PillFieldType, value: string | number, label: string) => {
-      const pill: Pill = {
-        id: crypto.randomUUID(),
-        fieldType,
-        value,
-        label,
-      };
-      const current = getSnapshot();
-      writePills([...current, pill]);
-    },
-    [],
+  // Derived filtered arrays
+  const pills = items.filter((item): item is Pill => item.kind === "pill");
+  const groups = items.filter(
+    (item): item is PillGroup => item.kind === "group",
   );
 
-  const removePill = useCallback((id: string) => {
-    const current = getSnapshot();
-    writePills(current.filter((p) => p.id !== id));
-  }, []);
+  function addPill(
+    fieldType: PillFieldType,
+    value: string | number,
+    label: string,
+  ) {
+    const pill: Pill = {
+      id: crypto.randomUUID(),
+      kind: "pill",
+      fieldType,
+      value,
+      label,
+    };
+    writeItems([...getSnapshot(), pill]);
+  }
 
-  const resolvePillToFields = useCallback(
-    (pill: Pill): PartialWorkoutFields => {
-      switch (pill.fieldType) {
-        case "sport":
-          return { sport: pill.value as Sport };
-        case "workoutType":
-          return { workoutType: pill.value as WorkoutType };
-        case "heartRateZone":
-          return { heartRateZone: pill.value as HeartRateZone };
-        case "distance":
-          return { distance: pill.value as number };
-        case "pace":
-          return { pace: pill.value as string };
-      }
-    },
-    [],
-  );
+  function addExistingPill(pill: Pill) {
+    writeItems([...getSnapshot(), pill]);
+  }
 
-  const getWorkoutDefaults = useCallback(
-    (fields: PartialWorkoutFields) => ({
+  function removePill(id: string) {
+    writeItems(getSnapshot().filter((item) => item.id !== id));
+  }
+
+  function addGroup(group: PillGroup) {
+    writeItems([...getSnapshot(), group]);
+  }
+
+  function updateGroup(id: string, updates: Partial<PillGroup>) {
+    writeItems(
+      getSnapshot().map((item) =>
+        item.id === id && item.kind === "group"
+          ? { ...item, ...updates }
+          : item,
+      ),
+    );
+  }
+
+  function removeItem(id: string) {
+    writeItems(getSnapshot().filter((item) => item.id !== id));
+  }
+
+  function resolvePillToFields(pill: Pill): PartialWorkoutFields {
+    switch (pill.fieldType) {
+      case "sport":
+        return { sport: pill.value as Sport };
+      case "workoutType":
+        return { workoutType: pill.value as WorkoutType };
+      case "heartRateZone":
+        return { heartRateZone: pill.value as HeartRateZone };
+      case "distance":
+        return { distance: pill.value as number };
+      case "pace":
+        return { pace: pill.value as string };
+    }
+  }
+
+  function getWorkoutDefaults(fields: PartialWorkoutFields) {
+    return {
       sport: fields.sport ?? WORKOUT_DEFAULTS.sport,
       workoutType: fields.workoutType ?? WORKOUT_DEFAULTS.workoutType,
       heartRateZone: fields.heartRateZone ?? WORKOUT_DEFAULTS.heartRateZone,
       distance: fields.distance,
       pace: fields.pace,
-    }),
-    [],
-  );
+    };
+  }
 
   return {
+    items,
     pills,
+    groups,
     addPill,
+    addExistingPill,
     removePill,
+    addGroup,
+    updateGroup,
+    removeItem,
     resolvePillToFields,
     getWorkoutDefaults,
   };

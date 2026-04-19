@@ -72,6 +72,7 @@ export function WeeklySchedule() {
 
   // Playground hook
   const {
+    items,
     pills,
     addPill,
     removePill,
@@ -99,7 +100,6 @@ export function WeeklySchedule() {
     refreshWorkouts,
   });
 
-  // Dialog handlers
   const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
     setSelectedDay(day);
     setEditingWorkout(workout || null);
@@ -177,7 +177,6 @@ export function WeeklySchedule() {
       if (pill) return <PillChip pill={pill} isOverlay />;
     }
 
-    // Default: workout card overlay
     const workout = getDisplayWorkouts().find((w) => w.id === activeId);
     if (workout) {
       return (
@@ -343,12 +342,13 @@ export function WeeklySchedule() {
           })}
         </div>
 
-        {/* Playground */}
         <div className="max-w-385">
           <PlaygroundArea
-            pills={pills}
+            items={items}
             onAddPill={addPill}
             isDragActive={activeId !== null}
+            activeId={activeId}
+            activeDragType={activeDragType}
           />
         </div>
 

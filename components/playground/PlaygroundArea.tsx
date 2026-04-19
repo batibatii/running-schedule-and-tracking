@@ -1,9 +1,15 @@
 "use client";
 
-import { Pill, PillFieldType } from "@/types/playground";
+import { useDroppable } from "@dnd-kit/core";
+import {
+  PlaygroundItem,
+  PillFieldType,
+  DragItemType,
+} from "@/types/playground";
 import { SPORTS } from "@/types/workout";
 import { GeneratorSection } from "./GeneratorSection";
 import { PillChip } from "./PillChip";
+import { PillGroupCard } from "./PillGroupCard";
 import { TrashBin } from "./TrashBin";
 
 const SPORT_OPTIONS = SPORTS.map((s) => ({
@@ -21,22 +27,37 @@ const WORKOUT_TYPE_OPTIONS = [
 ];
 
 interface PlaygroundAreaProps {
-  pills: Pill[];
+  items: PlaygroundItem[];
   onAddPill: (
     fieldType: PillFieldType,
     value: string | number,
     label: string,
   ) => void;
   isDragActive: boolean;
+  activeId: string | null;
+  activeDragType: DragItemType | null;
 }
 
 export function PlaygroundArea({
-  pills,
+  items,
   onAddPill,
   isDragActive,
+  activeId,
+  activeDragType,
 }: PlaygroundAreaProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "playground-drop",
+    data: { type: "playground" },
+  });
+
   return (
-    <div className="border rounded-lg p-4 bg-muted/30">
+    <div
+      ref={setNodeRef}
+      className={`
+        border rounded-lg p-4 bg-muted/30 transition-all
+        ${isOver ? "ring-2 ring-primary/40" : ""}
+      `}
+    >
       <div className="grid grid-rows-[auto_1fr_auto] gap-4 min-h-40">
         <div className="flex justify-between items-start">
           <GeneratorSection
@@ -54,16 +75,25 @@ export function PlaygroundArea({
           />
         </div>
 
-        {/* Center: pills workspace */}
         <div className="flex flex-wrap gap-2 content-start min-h-16 p-2 rounded-md">
-          {pills.length === 0 && !isDragActive && (
+          {items.length === 0 && !isDragActive && (
             <span className="text-xs text-muted-foreground self-center mx-auto">
               Create items using the + buttons, then drag them to your schedule
             </span>
           )}
-          {pills.map((pill) => (
-            <PillChip key={pill.id} pill={pill} />
-          ))}
+          {items.map((item) =>
+            item.kind === "pill" ? (
+              <PillChip
+                key={item.id}
+                pill={item}
+                isMergeTarget={
+                  activeDragType === "pill" && activeId !== item.id
+                }
+              />
+            ) : (
+              <PillGroupCard key={item.id} group={item} />
+            ),
+          )}
         </div>
 
         <div className="flex justify-between items-end">
