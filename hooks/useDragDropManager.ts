@@ -9,11 +9,18 @@ import {
 } from "@/types/workout";
 import {
   Pill,
+  PillGroup,
+  Preset,
   PillFieldType,
   PartialWorkoutFields,
   DragItemType,
 } from "@/types/playground";
 import { calculateDuration } from "@/lib/utils/pace";
+import {
+  getSportLabel,
+  getWorkoutTypeLabel,
+  getZoneLabel,
+} from "@/lib/utils/workoutLabels";
 import { toast } from "sonner";
 import {
   createWorkoutAction,
@@ -31,6 +38,10 @@ interface UseDragDropManagerProps {
     value: string | number,
     label: string,
   ) => void;
+  addExistingPill: (pill: Pill) => void;
+  addGroup: (group: PillGroup) => void;
+  updateGroup: (id: string, updates: Partial<PillGroup>) => void;
+  removeItem: (id: string) => void;
   resolvePillToFields: (pill: Pill) => PartialWorkoutFields;
   getWorkoutDefaults: (fields: PartialWorkoutFields) => {
     sport: Sport;
@@ -42,11 +53,68 @@ interface UseDragDropManagerProps {
   refreshWorkouts: () => void;
 }
 
+/**
+ * Decompose a workout into individual pills.
+ */
+function workoutToPills(workout: Workout): Pill[] {
+  const pills: Pill[] = [];
+
+  pills.push({
+    id: crypto.randomUUID(),
+    kind: "pill",
+    fieldType: "sport",
+    value: workout.sport,
+    label: getSportLabel(workout.sport),
+  });
+
+  pills.push({
+    id: crypto.randomUUID(),
+    kind: "pill",
+    fieldType: "workoutType",
+    value: workout.workoutType,
+    label: getWorkoutTypeLabel(workout.workoutType),
+  });
+
+  pills.push({
+    id: crypto.randomUUID(),
+    kind: "pill",
+    fieldType: "heartRateZone",
+    value: workout.heartRateZone,
+    label: getZoneLabel(workout.heartRateZone),
+  });
+
+  if (workout.distance) {
+    pills.push({
+      id: crypto.randomUUID(),
+      kind: "pill",
+      fieldType: "distance",
+      value: workout.distance,
+      label: `${workout.distance} km`,
+    });
+  }
+
+  if (workout.pace) {
+    pills.push({
+      id: crypto.randomUUID(),
+      kind: "pill",
+      fieldType: "pace",
+      value: workout.pace,
+      label: `${workout.pace} /km`,
+    });
+  }
+
+  return pills;
+}
+
 export function useDragDropManager({
   workouts,
   weekStartDateISO,
   removePill,
   addPill,
+  addExistingPill,
+  addGroup,
+  updateGroup,
+  removeItem,
   resolvePillToFields,
   getWorkoutDefaults,
   refreshWorkouts,
@@ -75,12 +143,14 @@ export function useDragDropManager({
       const sourceType = active.data.current?.type as string;
       const targetType = over.data.current?.type as string;
 
+      // ── pill → trash ──
       if (sourceType === "pill" && targetType === "trash") {
         const pill = active.data.current?.pill as Pill;
         removePill(pill.id);
         return;
       }
 
+      // ── pill → day (create workout) ──
       if (sourceType === "pill" && targetType === "day") {
         const pill = active.data.current?.pill as Pill;
         const day = over.data.current?.day as DayOfWeek;
@@ -107,6 +177,7 @@ export function useDragDropManager({
         return;
       }
 
+      // ── pill → workout-card (merge field into workout) ──
       if (sourceType === "pill" && targetType === "workout-card") {
         const pill = active.data.current?.pill as Pill;
         const targetWorkoutId = over.data.current?.workoutId as string;
@@ -170,6 +241,192 @@ export function useDragDropManager({
         return;
       }
 
+      // ── pill → pill-target (merge two pills into a group) ──
+      if (sourceType === "pill" && targetType === "pill-target") {
+        const draggedPill = active.data.current?.pill as Pill;
+        const targetPill = over.data.current?.pill as Pill;
+
+        const fieldsA = resolvePillToFields(draggedPill);
+        const fieldsB = resolvePillToFields(targetPill);
+        // Target pill's field takes priority (it was there first),
+        // dragged pill overwrites on conflict
+        const mergedFields: PartialWorkoutFields = {
+          ...fieldsB,
+          ...fieldsA,
+        };
+
+        const group: PillGroup = {
+          id: crypto.randomUUID(),
+          kind: "group",
+          fields: mergedFields,
+          pills: [targetPill, draggedPill],
+          createdAt: Date.now(),
+        };
+
+        removeItem(draggedPill.id);
+        removeItem(targetPill.id);
+        addGroup(group);
+        return;
+      }
+
+      // ── pill → group-card (add pill to existing group) ──
+      if (sourceType === "pill" && targetType === "group-card") {
+        const pill = active.data.current?.pill as Pill;
+        const group = over.data.current?.group as PillGroup;
+
+        const pillFields = resolvePillToFields(pill);
+        const mergedFields: PartialWorkoutFields = {
+          ...group.fields,
+          ...pillFields,
+        };
+
+        removeItem(pill.id);
+        updateGroup(group.id, {
+          fields: mergedFields,
+          pills: [...group.pills, pill],
+        });
+        return;
+      }
+
+      // ── group → trash ──
+      if (sourceType === "group" && targetType === "trash") {
+        const group = active.data.current?.group as PillGroup;
+        removeItem(group.id);
+        toast.success("Group deleted", {
+          action: {
+            label: "Undo",
+            onClick: () => addGroup(group),
+          },
+          duration: 5000,
+        });
+        return;
+      }
+
+      // ── group → day (create workout from group) ──
+      if (sourceType === "group" && targetType === "day") {
+        const group = active.data.current?.group as PillGroup;
+        const day = over.data.current?.day as DayOfWeek;
+        const defaults = getWorkoutDefaults(group.fields);
+
+        try {
+          const workoutData: Record<string, unknown> = {
+            sport: defaults.sport,
+            workoutType: defaults.workoutType,
+            heartRateZone: defaults.heartRateZone,
+            distance: defaults.distance ?? 0,
+            pace: defaults.pace,
+          };
+
+          if (defaults.distance && defaults.pace) {
+            workoutData.duration = calculateDuration(
+              defaults.distance,
+              defaults.pace,
+            );
+          }
+
+          await createWorkoutAction(
+            workoutData as Parameters<typeof createWorkoutAction>[0],
+            day,
+            weekStartDateISO,
+          );
+          removeItem(group.id);
+          refreshWorkouts();
+        } catch {
+          toast.error("Failed to create workout");
+        }
+        return;
+      }
+
+      // ── group → workout-card (merge group fields into workout) ──
+      if (sourceType === "group" && targetType === "workout-card") {
+        const group = active.data.current?.group as PillGroup;
+        const targetWorkoutId = over.data.current?.workoutId as string;
+        const workout = workouts?.find((w) => w.id === targetWorkoutId);
+
+        if (!workout) return;
+
+        const updateFields = { ...group.fields } as Record<string, unknown>;
+
+        // Recalculate duration if both distance and pace will be present
+        const finalDistance = (group.fields.distance ?? workout.distance) as
+          | number
+          | undefined;
+        const finalPace = (group.fields.pace ?? workout.pace) as
+          | string
+          | undefined;
+        if (finalDistance && finalPace) {
+          updateFields.duration = calculateDuration(finalDistance, finalPace);
+        }
+
+        try {
+          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
+          removeItem(group.id);
+          refreshWorkouts();
+        } catch {
+          toast.error("Failed to update workout");
+        }
+        return;
+      }
+
+      // ── workout → playground (decompose into pills, move) ──
+      if (sourceType === "workout" && targetType === "playground") {
+        const workoutId = active.data.current?.workoutId as string;
+        const workout = workouts?.find((w) => w.id === workoutId);
+
+        if (!workout) return;
+
+        // Clear any pending day changes for this workout
+        setPendingChanges((prev) => {
+          const next = new Map(prev);
+          next.delete(workoutId);
+          return next;
+        });
+
+        const decomposedPills = workoutToPills(workout);
+
+        try {
+          await deleteWorkoutAction(workoutId);
+          for (const pill of decomposedPills) {
+            addExistingPill(pill);
+          }
+          refreshWorkouts();
+
+          toast.success("Workout decomposed into pills", {
+            action: {
+              label: "Undo",
+              onClick: async () => {
+                try {
+                  await createWorkoutAction(
+                    {
+                      sport: workout.sport,
+                      workoutType: workout.workoutType,
+                      heartRateZone: workout.heartRateZone,
+                      distance: workout.distance ?? 0,
+                      duration: workout.duration,
+                      pace: workout.pace,
+                    },
+                    workout.dayOfWeek,
+                    weekStartDateISO,
+                  );
+                  // Remove the decomposed pills
+                  for (const pill of decomposedPills) {
+                    removeItem(pill.id);
+                  }
+                  refreshWorkouts();
+                } catch {
+                  toast.error("Failed to undo");
+                }
+              },
+            },
+            duration: 5000,
+          });
+        } catch {
+          toast.error("Failed to decompose workout");
+        }
+        return;
+      }
+
+      // ── workout → trash ──
       if (sourceType === "workout" && targetType === "trash") {
         const workoutId = active.data.current?.workoutId as string;
         const workout = workouts?.find((w) => w.id === workoutId);
@@ -219,6 +476,7 @@ export function useDragDropManager({
         return;
       }
 
+      // ── workout → day (move to different day) ──
       if (sourceType === "workout" && targetType === "day") {
         const workoutId = active.data.current?.workoutId as string;
         const newDay = over.data.current?.day as DayOfWeek;
@@ -242,12 +500,79 @@ export function useDragDropManager({
         });
         return;
       }
+
+      // ── preset → day (create workout from preset) ──
+      if (sourceType === "preset" && targetType === "day") {
+        const preset = active.data.current?.preset as Preset;
+        const day = over.data.current?.day as DayOfWeek;
+        const defaults = getWorkoutDefaults(preset.fields);
+
+        try {
+          const workoutData: Record<string, unknown> = {
+            sport: defaults.sport,
+            workoutType: defaults.workoutType,
+            heartRateZone: defaults.heartRateZone,
+            distance: defaults.distance ?? 0,
+            pace: defaults.pace,
+          };
+
+          if (defaults.distance && defaults.pace) {
+            workoutData.duration = calculateDuration(
+              defaults.distance,
+              defaults.pace,
+            );
+          }
+
+          await createWorkoutAction(
+            workoutData as Parameters<typeof createWorkoutAction>[0],
+            day,
+            weekStartDateISO,
+          );
+          refreshWorkouts();
+        } catch {
+          toast.error("Failed to create workout from preset");
+        }
+        return;
+      }
+
+      // ── preset → workout-card (merge preset fields into workout) ──
+      if (sourceType === "preset" && targetType === "workout-card") {
+        const preset = active.data.current?.preset as Preset;
+        const targetWorkoutId = over.data.current?.workoutId as string;
+        const workout = workouts?.find((w) => w.id === targetWorkoutId);
+
+        if (!workout) return;
+
+        const updateFields = { ...preset.fields } as Record<string, unknown>;
+
+        const finalDistance = (preset.fields.distance ?? workout.distance) as
+          | number
+          | undefined;
+        const finalPace = (preset.fields.pace ?? workout.pace) as
+          | string
+          | undefined;
+        if (finalDistance && finalPace) {
+          updateFields.duration = calculateDuration(finalDistance, finalPace);
+        }
+
+        try {
+          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
+          refreshWorkouts();
+        } catch {
+          toast.error("Failed to apply preset to workout");
+        }
+        return;
+      }
     },
     [
       workouts,
       weekStartDateISO,
       removePill,
       addPill,
+      addExistingPill,
+      addGroup,
+      updateGroup,
+      removeItem,
       resolvePillToFields,
       getWorkoutDefaults,
       refreshWorkouts,

@@ -4,6 +4,7 @@ import { useDroppable } from "@dnd-kit/core";
 import {
   PlaygroundItem,
   PillFieldType,
+  PartialWorkoutFields,
   DragItemType,
 } from "@/types/playground";
 import { SPORTS } from "@/types/workout";
@@ -36,6 +37,7 @@ interface PlaygroundAreaProps {
   isDragActive: boolean;
   activeId: string | null;
   activeDragType: DragItemType | null;
+  onSaveAsPreset?: (label: string, fields: PartialWorkoutFields) => void;
 }
 
 export function PlaygroundArea({
@@ -44,6 +46,7 @@ export function PlaygroundArea({
   isDragActive,
   activeId,
   activeDragType,
+  onSaveAsPreset,
 }: PlaygroundAreaProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "playground-drop",
@@ -91,7 +94,11 @@ export function PlaygroundArea({
                 }
               />
             ) : (
-              <PillGroupCard key={item.id} group={item} />
+              <PillGroupCard
+                key={item.id}
+                group={item}
+                onSaveAsPreset={onSaveAsPreset}
+              />
             ),
           )}
         </div>

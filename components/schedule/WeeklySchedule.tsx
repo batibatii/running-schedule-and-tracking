@@ -18,6 +18,10 @@ import { DroppableDay } from "./DroppableDay";
 import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
+import { PillGroupCard } from "@/components/playground/PillGroupCard";
+import { PresetSection } from "@/components/playground/PresetSection";
+import { PresetChip } from "@/components/playground/PresetChip";
+import { usePresets } from "@/hooks/usePresets";
 import { WorkoutFormData } from "@/types/workoutValidation";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { usePlayground } from "@/hooks/usePlayground";
@@ -70,15 +74,21 @@ export function WeeklySchedule() {
     refreshWorkouts();
   }, [weekStartDateISO]);
 
-  // Playground hook
   const {
     items,
     pills,
+    groups,
     addPill,
+    addExistingPill,
     removePill,
+    addGroup,
+    updateGroup,
+    removeItem,
     resolvePillToFields,
     getWorkoutDefaults,
   } = usePlayground();
+
+  const { presets, addPreset, removePreset } = usePresets();
 
   // Unified DnD manager
   const {
@@ -95,6 +105,10 @@ export function WeeklySchedule() {
     weekStartDateISO,
     removePill,
     addPill,
+    addExistingPill,
+    addGroup,
+    updateGroup,
+    removeItem,
     resolvePillToFields,
     getWorkoutDefaults,
     refreshWorkouts,
@@ -175,6 +189,16 @@ export function WeeklySchedule() {
     if (activeDragType === "pill") {
       const pill = pills.find((p) => p.id === activeId);
       if (pill) return <PillChip pill={pill} isOverlay />;
+    }
+
+    if (activeDragType === "group") {
+      const group = groups.find((g) => g.id === activeId);
+      if (group) return <PillGroupCard group={group} isOverlay />;
+    }
+
+    if (activeDragType === "preset") {
+      const preset = presets.find((p) => `preset-${p.id}` === activeId);
+      if (preset) return <PresetChip preset={preset} isOverlay />;
     }
 
     const workout = getDisplayWorkouts().find((w) => w.id === activeId);
@@ -349,7 +373,11 @@ export function WeeklySchedule() {
             isDragActive={activeId !== null}
             activeId={activeId}
             activeDragType={activeDragType}
+            onSaveAsPreset={addPreset}
           />
+          <div className="mt-2">
+            <PresetSection presets={presets} onDeletePreset={removePreset} />
+          </div>
         </div>
 
         <AddWorkoutDialog
