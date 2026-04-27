@@ -17,7 +17,7 @@ export function DroppableDay({ day, children }: DroppableDayProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`transition-colors rounded-md ${isOver ? "bg-chart-2/20" : ""}`}
+      className={`flex flex-col flex-1 transition-colors rounded-md ${isOver ? "bg-chart-2/20" : ""}`}
     >
       {children}
     </div>

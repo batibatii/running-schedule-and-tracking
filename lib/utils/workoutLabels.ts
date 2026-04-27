@@ -1,5 +1,18 @@
 import { Sport, WorkoutType, HeartRateZone } from "@/types/workout";
 
+export const SPORT_WORKOUT_TYPES: Record<Sport, WorkoutType[]> = {
+  running: ["easy", "tempo", "long", "recovery", "race", "interval"],
+  cycling: ["easy", "tempo", "interval", "recovery", "race"],
+  swimming: ["easy", "interval", "recovery"],
+};
+
+export function isCompatibleWorkoutType(
+  sport: Sport,
+  workoutType: WorkoutType,
+): boolean {
+  return SPORT_WORKOUT_TYPES[sport].includes(workoutType);
+}
+
 export function getSportLabel(sport: Sport): string {
   const labels: Record<Sport, string> = {
     running: "Run",

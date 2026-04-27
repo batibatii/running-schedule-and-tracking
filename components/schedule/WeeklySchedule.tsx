@@ -94,8 +94,10 @@ export function WeeklySchedule() {
   const {
     activeId,
     activeDragType,
+    isOverTrash,
     pendingChanges,
     handleDragStart,
+    handleDragOver,
     handleDragEnd,
     savePendingChanges,
     cancelPendingChanges,
@@ -111,6 +113,7 @@ export function WeeklySchedule() {
     removeItem,
     resolvePillToFields,
     getWorkoutDefaults,
+    removePreset,
     refreshWorkouts,
   });
 
@@ -227,6 +230,7 @@ export function WeeklySchedule() {
       sensors={sensors}
       collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
@@ -309,7 +313,7 @@ export function WeeklySchedule() {
                 <div className="flex flex-col flex-1">
                   <div className="overflow-y-auto max-h-66">
                     <DroppableDay day={day}>
-                      <div className="p-2 space-y-2 ">
+                      <div className="px-2 py-4 space-y-2 flex-1">
                         {getDisplayWorkouts()
                           .filter(
                             (w) =>
@@ -403,7 +407,13 @@ export function WeeklySchedule() {
               : undefined
           }
         />
-        <DragOverlay>{renderDragOverlay()}</DragOverlay>
+        <DragOverlay>
+          <div
+            className={`transition-transform duration-200 ${isOverTrash ? "scale-75 opacity-60" : ""}`}
+          >
+            {renderDragOverlay()}
+          </div>
+        </DragOverlay>
       </div>
     </DndContext>
   );

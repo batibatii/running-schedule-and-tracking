@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import {
+  Pill,
   PlaygroundItem,
   PillFieldType,
   PartialWorkoutFields,
@@ -53,6 +54,13 @@ export function PlaygroundArea({
     data: { type: "playground" },
   });
 
+  const activePillFieldType =
+    activeDragType === "pill"
+      ? (items.find(
+          (item): item is Pill => item.kind === "pill" && item.id === activeId,
+        ))?.fieldType
+      : undefined;
+
   return (
     <div
       ref={setNodeRef}
@@ -90,7 +98,9 @@ export function PlaygroundArea({
                 key={item.id}
                 pill={item}
                 isMergeTarget={
-                  activeDragType === "pill" && activeId !== item.id
+                  activeDragType === "pill" &&
+                  activeId !== item.id &&
+                  activePillFieldType !== item.fieldType
                 }
               />
             ) : (

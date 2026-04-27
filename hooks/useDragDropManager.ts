@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+import { DragStartEvent, DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import {
   DayOfWeek,
   Workout,
@@ -20,6 +20,7 @@ import {
   getSportLabel,
   getWorkoutTypeLabel,
   getZoneLabel,
+  isCompatibleWorkoutType,
 } from "@/lib/utils/workoutLabels";
 import { toast } from "sonner";
 import {
@@ -50,6 +51,7 @@ interface UseDragDropManagerProps {
     distance?: number;
     pace?: string;
   };
+  removePreset: (id: string) => void;
   refreshWorkouts: () => void;
 }
 
@@ -117,15 +119,21 @@ export function useDragDropManager({
   removeItem,
   resolvePillToFields,
   getWorkoutDefaults,
+  removePreset,
   refreshWorkouts,
 }: UseDragDropManagerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<DragItemType | null>(
     null,
   );
+  const [isOverTrash, setIsOverTrash] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Map<string, DayOfWeek>>(
     new Map(),
   );
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    setIsOverTrash(event.over?.data.current?.type === "trash");
+  }, []);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -137,6 +145,7 @@ export function useDragDropManager({
       const { active, over } = event;
       setActiveId(null);
       setActiveDragType(null);
+      setIsOverTrash(false);
 
       if (!over) return;
 
@@ -246,6 +255,33 @@ export function useDragDropManager({
         const draggedPill = active.data.current?.pill as Pill;
         const targetPill = over.data.current?.pill as Pill;
 
+        // Don't merge pills with the same field type
+        if (draggedPill.fieldType === targetPill.fieldType) {
+          toast.warning("Cannot merge two pills of the same type");
+          return;
+        }
+
+        // Check sport ↔ workoutType compatibility
+        const sportPill = [draggedPill, targetPill].find(
+          (pill) => pill.fieldType === "sport",
+        );
+        const workoutTypePill = [draggedPill, targetPill].find(
+          (pill) => pill.fieldType === "workoutType",
+        );
+        if (
+          sportPill &&
+          workoutTypePill &&
+          !isCompatibleWorkoutType(
+            sportPill.value as Sport,
+            workoutTypePill.value as WorkoutType,
+          )
+        ) {
+          toast.warning(
+            `"${workoutTypePill.label}" is not compatible with "${sportPill.label}"`,
+          );
+          return;
+        }
+
         const fieldsA = resolvePillToFields(draggedPill);
         const fieldsB = resolvePillToFields(targetPill);
         // Target pill's field takes priority (it was there first),
@@ -273,6 +309,24 @@ export function useDragDropManager({
       if (sourceType === "pill" && targetType === "group-card") {
         const pill = active.data.current?.pill as Pill;
         const group = over.data.current?.group as PillGroup;
+
+        // Check sport ↔ workoutType compatibility with existing group fields
+        const incomingSport =
+          pill.fieldType === "sport" ? (pill.value as Sport) : group.fields.sport;
+        const incomingWorkoutType =
+          pill.fieldType === "workoutType"
+            ? (pill.value as WorkoutType)
+            : group.fields.workoutType;
+        if (
+          incomingSport &&
+          incomingWorkoutType &&
+          !isCompatibleWorkoutType(incomingSport, incomingWorkoutType)
+        ) {
+          toast.warning(
+            `"${getWorkoutTypeLabel(incomingWorkoutType)}" is not compatible with "${getSportLabel(incomingSport)}"`,
+          );
+          return;
+        }
 
         const pillFields = resolvePillToFields(pill);
         const mergedFields: PartialWorkoutFields = {
@@ -563,6 +617,14 @@ export function useDragDropManager({
         }
         return;
       }
+
+      // ── preset → trash (delete preset) ──
+      if (sourceType === "preset" && targetType === "trash") {
+        const preset = active.data.current?.preset as Preset;
+        removePreset(preset.id);
+        toast.success(`Preset "${preset.label}" deleted`);
+        return;
+      }
     },
     [
       workouts,
@@ -575,6 +637,7 @@ export function useDragDropManager({
       removeItem,
       resolvePillToFields,
       getWorkoutDefaults,
+      removePreset,
       refreshWorkouts,
     ],
   );
@@ -607,8 +670,10 @@ export function useDragDropManager({
   return {
     activeId,
     activeDragType,
+    isOverTrash,
     pendingChanges,
     handleDragStart,
+    handleDragOver,
     handleDragEnd,
     savePendingChanges,
     cancelPendingChanges,
