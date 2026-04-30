@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { weeklyWorkouts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { CreateWorkoutInputType } from "@/types/workout";
+import { CreateWorkoutInputType } from "@/types/workoutValidation";
 
 export async function getWorkouts(
   userId: string,
@@ -57,7 +57,7 @@ export async function updateWorkout(
   userId: string,
   validatedData: Partial<CreateWorkoutInputType> & { completed?: boolean },
 ) {
-  const { distance, duration, ...rest } = validatedData;
+  const { distance, duration, sport, ...rest } = validatedData;
 
   const [updatedWorkout] = await db
     .update(weeklyWorkouts)
@@ -65,6 +65,7 @@ export async function updateWorkout(
       ...rest,
       ...(distance !== undefined ? { distance: String(distance) } : {}),
       ...(duration !== undefined ? { duration: String(duration) } : {}),
+      ...(sport !== undefined ? { sport } : {}),
     })
     .where(
       and(eq(weeklyWorkouts.id, workoutId), eq(weeklyWorkouts.userId, userId)),

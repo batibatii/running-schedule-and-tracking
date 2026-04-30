@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -14,8 +14,19 @@ import {
 import { DayOfWeek, Workout } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
+import { DroppableDay } from "./DroppableDay";
+import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
+import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
+import { PillChip } from "@/components/playground/PillChip";
+import { PillGroupCard } from "@/components/playground/PillGroupCard";
+import { PresetSection } from "@/components/playground/PresetSection";
+import { PresetChip } from "@/components/playground/PresetChip";
+import { TrashBin } from "@/components/playground/TrashBin";
+import { usePresets } from "@/hooks/usePresets";
 import { WorkoutFormData } from "@/types/workoutValidation";
 import { useAsyncData } from "@/hooks/useAsyncData";
+import { usePlayground } from "@/hooks/usePlayground";
+import { useDragDropManager } from "@/hooks/useDragDropManager";
 import {
   fetchWorkoutsAction,
   createWorkoutAction,
@@ -24,15 +35,12 @@ import {
 } from "@/app/actions/workout";
 import {
   DndContext,
-  DragEndEvent,
   DragOverlay,
   useSensor,
   useSensors,
   PointerSensor,
-  DragStartEvent,
+  pointerWithin,
 } from "@dnd-kit/core";
-import { updateWorkoutDayAction } from "@/app/actions/workout";
-import { useDroppable, useDraggable } from "@dnd-kit/core";
 
 export function WeeklySchedule() {
   // Week navigation state (0 = this week, -1 = last week, 1 = next week)
@@ -44,28 +52,6 @@ export function WeeklySchedule() {
   const [offsetHighlightDate, setOffsetHighlightDate] = useState<string | null>(
     null,
   );
-
-  const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
-    setSelectedDay(day);
-    setEditingWorkout(workout || null);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = (open: boolean) => {
-    setIsDialogOpen(open);
-    if (!open) {
-      if (editingWorkout) {
-        fetchWorkouts(fetchWorkoutsFromAPI);
-      }
-      setEditingWorkout(null);
-    }
-  };
-
-  const [pendingChanges, setPendingChanges] = useState<Map<string, DayOfWeek>>(
-    new Map(),
-  );
-
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -81,13 +67,72 @@ export function WeeklySchedule() {
   const weekDates = getWeekDates(weekStartDate);
   const weekStartDateISO = formatDateToISO(weekStartDate);
 
-  const fetchWorkoutsFromAPI = useCallback(async (): Promise<Workout[]> => {
-    return fetchWorkoutsAction(weekStartDateISO);
-  }, [weekStartDateISO]);
+  const refreshWorkouts = () => {
+    fetchWorkouts(() => fetchWorkoutsAction(weekStartDateISO));
+  };
 
   useEffect(() => {
-    fetchWorkouts(fetchWorkoutsFromAPI);
-  }, [fetchWorkouts, fetchWorkoutsFromAPI]);
+    refreshWorkouts();
+  }, [weekStartDateISO]);
+
+  const {
+    items,
+    pills,
+    groups,
+    addPill,
+    addExistingPill,
+    removePill,
+    addGroup,
+    updateGroup,
+    removeItem,
+    resolvePillToFields,
+    getWorkoutDefaults,
+  } = usePlayground();
+
+  const { presets, addPreset, removePreset } = usePresets();
+
+  // Unified DnD manager
+  const {
+    activeId,
+    activeDragType,
+    isOverTrash,
+    pendingChanges,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    savePendingChanges,
+    cancelPendingChanges,
+    getDisplayWorkouts,
+  } = useDragDropManager({
+    workouts,
+    weekStartDateISO,
+    removePill,
+    addPill,
+    addExistingPill,
+    addGroup,
+    updateGroup,
+    removeItem,
+    resolvePillToFields,
+    getWorkoutDefaults,
+    removePreset,
+    refreshWorkouts,
+  });
+
+  const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
+    setSelectedDay(day);
+    setEditingWorkout(workout || null);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      if (editingWorkout) {
+        refreshWorkouts();
+      }
+      setEditingWorkout(null);
+    }
+  };
 
   const handleSaveWorkout = async (workout: WorkoutFormData) => {
     if (editingWorkout) {
@@ -100,14 +145,15 @@ export function WeeklySchedule() {
     } else {
       await createWorkoutAction(workout, selectedDay, weekStartDateISO);
     }
-    fetchWorkouts(fetchWorkoutsFromAPI);
+    refreshWorkouts();
   };
 
   const handleDeleteWorkout = async (workoutId: string) => {
     await deleteWorkoutAction(workoutId);
-    fetchWorkouts(fetchWorkoutsFromAPI);
+    refreshWorkouts();
   };
 
+  // Week navigation
   const daysOfWeek: DayOfWeek[] = [
     "monday",
     "tuesday",
@@ -140,106 +186,52 @@ export function WeeklySchedule() {
     }
   };
 
-  const getDisplayWorkouts = useCallback(() => {
-    if (!workouts) return [];
+  // Build the DragOverlay content based on what's being dragged
+  const renderDragOverlay = () => {
+    if (!activeId) return null;
 
-    return workouts.map((workout) => {
-      const pendingDay = pendingChanges.get(workout.id);
-      if (pendingDay) {
-        return { ...workout, dayOfWeek: pendingDay };
-      }
-      return workout;
-    });
-  }, [workouts, pendingChanges]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const workoutId = active.id as string;
-    const newDay = over.id as DayOfWeek;
-
-    const workout = workouts?.find((w) => w.id === workoutId);
-    if (!workout) return;
-
-    if (workout.dayOfWeek === newDay) {
-      setPendingChanges((prev) => {
-        const next = new Map(prev);
-        next.delete(workoutId);
-        return next;
-      });
-      return;
+    if (activeDragType === "pill") {
+      const pill = pills.find((p) => p.id === activeId);
+      if (pill) return <PillChip pill={pill} isOverlay />;
     }
 
-    setPendingChanges((prev) => {
-      const next = new Map(prev);
-      next.set(workoutId, newDay);
-      return next;
-    });
-    setActiveId(null);
+    if (activeDragType === "group") {
+      const group = groups.find((g) => g.id === activeId);
+      if (group) return <PillGroupCard group={group} isOverlay />;
+    }
+
+    if (activeDragType === "preset") {
+      const preset = presets.find((p) => `preset-${p.id}` === activeId);
+      if (preset) return <PresetChip preset={preset} isOverlay />;
+    }
+
+    const workout = getDisplayWorkouts().find((w) => w.id === activeId);
+    if (workout) {
+      return (
+        <div style={{ cursor: "grabbing" }}>
+          <WorkoutCard
+            id={workout.id}
+            sport={workout.sport}
+            workoutType={workout.workoutType}
+            heartRateZone={workout.heartRateZone}
+            distance={workout.distance ?? 0}
+            duration={workout.duration}
+            title={workout.title}
+            notes={workout.notes}
+          />
+        </div>
+      );
+    }
+
+    return null;
   };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleSaveChanges = async () => {
-    const promises = Array.from(pendingChanges.entries()).map(
-      ([workoutId, newDay]) => updateWorkoutDayAction(workoutId, newDay),
-    );
-
-    await Promise.all(promises);
-    setPendingChanges(new Map());
-    fetchWorkouts(fetchWorkoutsFromAPI);
-  };
-
-  const handleCancelChanges = () => {
-    setPendingChanges(new Map());
-  };
-
-  function DroppableDay({
-    day,
-    children,
-  }: {
-    day: DayOfWeek;
-    children: React.ReactNode;
-  }) {
-    const { setNodeRef } = useDroppable({ id: day });
-
-    return <div ref={setNodeRef}>{children}</div>;
-  }
-
-  function DraggableWorkoutCard({
-    id,
-    children,
-  }: {
-    id: string;
-    children: React.ReactNode;
-  }) {
-    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-      id,
-    });
-
-    return (
-      <div
-        ref={setNodeRef}
-        {...listeners}
-        {...attributes}
-        style={{
-          opacity: isDragging ? 0.5 : 1,
-          cursor: "grab",
-        }}
-      >
-        {children}
-      </div>
-    );
-  }
 
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
@@ -249,10 +241,10 @@ export function WeeklySchedule() {
               {pendingChanges.size} workout{pendingChanges.size > 1 ? "s" : ""}{" "}
               moved
             </span>
-            <Button variant="outline" onClick={handleCancelChanges}>
+            <Button variant="outline" onClick={cancelPendingChanges}>
               Cancel
             </Button>
-            <Button onClick={handleSaveChanges}>Save Changes</Button>
+            <Button onClick={savePendingChanges}>Save Changes</Button>
           </div>
         )}
         {/* Week Navigation Header */}
@@ -322,7 +314,7 @@ export function WeeklySchedule() {
                 <div className="flex flex-col flex-1">
                   <div className="overflow-y-auto max-h-66">
                     <DroppableDay day={day}>
-                      <div className="p-2 space-y-2 ">
+                      <div className="px-2 py-4 space-y-2 flex-1">
                         {getDisplayWorkouts()
                           .filter(
                             (w) =>
@@ -331,12 +323,13 @@ export function WeeklySchedule() {
                                 formatDateToISO(weekStartDate),
                           )
                           .map((workout) => (
-                            <DraggableWorkoutCard
+                            <DroppableWorkoutCard
                               key={workout.id}
                               id={workout.id}
                             >
                               <WorkoutCard
                                 id={workout.id}
+                                sport={workout.sport}
                                 workoutType={workout.workoutType}
                                 heartRateZone={workout.heartRateZone}
                                 distance={workout.distance ?? 0}
@@ -345,7 +338,7 @@ export function WeeklySchedule() {
                                 notes={workout.notes}
                                 onClick={() => handleOpenDialog(day, workout)}
                               />
-                            </DraggableWorkoutCard>
+                            </DroppableWorkoutCard>
                           ))}
 
                         {getDisplayWorkouts().filter(
@@ -378,6 +371,20 @@ export function WeeklySchedule() {
           })}
         </div>
 
+        <div className="max-w-385">
+          <PlaygroundArea
+            items={items}
+            onAddPill={addPill}
+            isDragActive={activeId !== null}
+            activeId={activeId}
+            activeDragType={activeDragType}
+            onSaveAsPreset={addPreset}
+          />
+          <div className="mt-2">
+            <PresetSection presets={presets} onDeletePreset={removePreset} />
+          </div>
+        </div>
+
         <AddWorkoutDialog
           open={isDialogOpen}
           onOpenChange={handleCloseDialog}
@@ -389,10 +396,12 @@ export function WeeklySchedule() {
             editingWorkout
               ? {
                   id: editingWorkout.id,
+                  sport: editingWorkout.sport,
                   workoutType: editingWorkout.workoutType,
                   heartRateZone: editingWorkout.heartRateZone,
                   distance: editingWorkout.distance ?? 0,
                   duration: editingWorkout.duration,
+                  pace: editingWorkout.pace,
                   title: editingWorkout.title,
                   notes: editingWorkout.notes,
                 }
@@ -400,27 +409,13 @@ export function WeeklySchedule() {
           }
         />
         <DragOverlay>
-          {activeId ? (
-            <div style={{ cursor: "grabbing" }}>
-              <WorkoutCard
-                {...(() => {
-                  const workout = getDisplayWorkouts().find(
-                    (w) => w.id === activeId,
-                  );
-                  return {
-                    id: workout?.id || "",
-                    workoutType: workout?.workoutType || "easy",
-                    heartRateZone: workout?.heartRateZone || "zone-1",
-                    distance: workout?.distance ?? 0,
-                    duration: workout?.duration,
-                    title: workout?.title,
-                    notes: workout?.notes,
-                  };
-                })()}
-              />
-            </div>
-          ) : null}
+          <div
+            className={`transition-transform duration-200 ${isOverTrash ? "scale-75 opacity-60" : ""}`}
+          >
+            {renderDragOverlay()}
+          </div>
         </DragOverlay>
+        <TrashBin isDragActive={activeId !== null} />
       </div>
     </DndContext>
   );

@@ -37,6 +37,7 @@ export async function createWorkoutAction(
     ...data,
     dayOfWeek,
     weekStartDate,
+    
   });
 
   return workout;
@@ -68,6 +69,16 @@ export async function updateWorkoutAction(
     dayOfWeek,
     weekStartDate,
   });
+  return updatedWorkout;
+}
+
+export async function updateWorkoutFieldAction(
+  workoutId: string,
+  fields: Partial<WorkoutFormData>,
+) {
+  const user = await requireAuth();
+
+  const updatedWorkout = await updateWorkout(workoutId, user.id, fields);
   return updatedWorkout;
 }
 

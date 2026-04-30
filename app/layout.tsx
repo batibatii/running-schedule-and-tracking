@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans, Noto_Sans_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
+import { Toaster } from "sonner";
 
 const notoSans = Noto_Sans({
   variable: "--font-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${notoSans.variable} ${notoSansMono.variable} antialiased`}
       >
         <AuthSessionProvider>{children}</AuthSessionProvider>
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );

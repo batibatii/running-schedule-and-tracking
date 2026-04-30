@@ -129,6 +129,8 @@ export const weeklyWorkouts = pgTable("weekly_workouts", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
 
+  sport: varchar("sport", { length: 50 }).default("running").notNull(),
+
   workoutType: varchar("workout_type", { length: 50 }).notNull(),
 
   heartRateZone: varchar("heart_rate_zone", { length: 10 }).notNull(),
