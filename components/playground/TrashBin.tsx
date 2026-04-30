@@ -17,17 +17,18 @@ export function TrashBin({ isDragActive }: TrashBinProps) {
     <div
       ref={setNodeRef}
       className={`
+        fixed bottom-8 left-1/2 -translate-x-1/2 z-50
         flex items-center justify-center
-        rounded-lg border-2 border-dashed
-        transition-all duration-200
+        rounded-xl border-2 border-dashed
+        transition-all duration-300 ease-out
         ${
           isDragActive
             ? isOver
-              ? "border-destructive bg-destructive/15 scale-110 shadow-md"
-              : "border-muted-foreground/40 bg-muted/50"
-            : "border-transparent opacity-40"
+              ? "opacity-100 scale-110 border-destructive bg-destructive/15 shadow-lg"
+              : "opacity-100 scale-100 border-muted-foreground/40 bg-background/90 shadow-md backdrop-blur-sm"
+            : "opacity-0 scale-75 pointer-events-none"
         }
-        w-14 h-14
+        w-16 h-16
       `}
     >
       <Trash2
@@ -36,9 +37,7 @@ export function TrashBin({ isDragActive }: TrashBinProps) {
           ${
             isOver
               ? "h-7 w-7 text-destructive"
-              : isDragActive
-                ? "h-5 w-5 text-muted-foreground"
-                : "h-5 w-5 text-muted-foreground/50"
+              : "h-5 w-5 text-muted-foreground"
           }
         `}
       />

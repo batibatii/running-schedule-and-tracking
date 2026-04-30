@@ -21,6 +21,7 @@ import { PillChip } from "@/components/playground/PillChip";
 import { PillGroupCard } from "@/components/playground/PillGroupCard";
 import { PresetSection } from "@/components/playground/PresetSection";
 import { PresetChip } from "@/components/playground/PresetChip";
+import { TrashBin } from "@/components/playground/TrashBin";
 import { usePresets } from "@/hooks/usePresets";
 import { WorkoutFormData } from "@/types/workoutValidation";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -414,6 +415,7 @@ export function WeeklySchedule() {
             {renderDragOverlay()}
           </div>
         </DragOverlay>
+        <TrashBin isDragActive={activeId !== null} />
       </div>
     </DndContext>
   );

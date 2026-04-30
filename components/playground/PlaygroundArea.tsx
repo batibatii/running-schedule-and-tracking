@@ -12,7 +12,7 @@ import { SPORTS } from "@/types/workout";
 import { GeneratorSection } from "./GeneratorSection";
 import { PillChip } from "./PillChip";
 import { PillGroupCard } from "./PillGroupCard";
-import { TrashBin } from "./TrashBin";
+
 
 const SPORT_OPTIONS = SPORTS.map((s) => ({
   value: s,
@@ -86,7 +86,7 @@ export function PlaygroundArea({
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 content-start min-h-16 p-2 rounded-md">
+        <div className="flex flex-wrap items-start gap-2 content-start min-h-16 p-2 rounded-md">
           {items.length === 0 && !isDragActive && (
             <span className="text-xs text-muted-foreground self-center mx-auto">
               Create items using the + buttons, then drag them to your schedule
@@ -120,17 +120,14 @@ export function PlaygroundArea({
             onAddPill={onAddPill}
             options={WORKOUT_TYPE_OPTIONS}
           />
-          <div className="flex items-end gap-4">
-            <GeneratorSection
-              title="Distance"
-              fieldType="distance"
-              onAddPill={onAddPill}
-              inputType="number"
-              inputPlaceholder="10"
-              inputSuffix="KM"
-            />
-            <TrashBin isDragActive={isDragActive} />
-          </div>
+          <GeneratorSection
+            title="Distance"
+            fieldType="distance"
+            onAddPill={onAddPill}
+            inputType="number"
+            inputPlaceholder="10"
+            inputSuffix="KM"
+          />
         </div>
       </div>
     </div>

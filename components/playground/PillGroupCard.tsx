@@ -77,7 +77,7 @@ export function PillGroupCard({
       className={`
         rounded-lg border border-pink-200 bg-pink-50/60
         p-2 space-y-1 select-none
-        transition-all min-w-30
+        transition-all min-w-30 flex-none
         ${isDragging && !isOverlay ? "opacity-40" : ""}
         ${isOverlay ? "shadow-lg cursor-grabbing" : "cursor-grab hover:shadow-sm"}
         ${isOver ? "ring-2 ring-pink-400/60" : ""}

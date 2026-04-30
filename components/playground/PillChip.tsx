@@ -49,7 +49,7 @@ export function PillChip({
       className={`
         inline-flex items-center px-3 py-1 rounded-full
         border text-sm font-medium select-none
-        transition-all
+        transition-all flex-none
         ${PILL_COLORS[pill.fieldType]}
         ${isDragging && !isOverlay ? "opacity-40" : ""}
         ${isOverlay ? "shadow-lg cursor-grabbing" : "cursor-grab hover:shadow-sm"}
