@@ -8,6 +8,7 @@ import {
   getWorkoutTypeLabel,
   getZoneLabel,
   getZoneColor,
+  generatePresetLabel,
 } from "@/lib/utils/workoutLabels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,16 +18,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Bookmark } from "lucide-react";
-
-function generatePresetLabel(fields: PartialWorkoutFields): string {
-  const parts: string[] = [];
-  if (fields.sport) parts.push(getSportLabel(fields.sport));
-  if (fields.workoutType) parts.push(getWorkoutTypeLabel(fields.workoutType));
-  if (fields.distance) parts.push(`${fields.distance} km`);
-  if (fields.pace) parts.push(fields.pace);
-  if (fields.heartRateZone) parts.push(getZoneLabel(fields.heartRateZone));
-  return parts.join(" · ") || "Preset";
-}
 
 interface PillGroupCardProps {
   group: PillGroup;
@@ -74,26 +65,19 @@ export function PillGroupCard({
       }}
       {...listeners}
       {...attributes}
-      className={`
-        rounded-lg border border-pink-200 bg-pink-50/60
-        p-2 space-y-1 select-none
-        transition-all min-w-30 flex-none
-        ${isDragging && !isOverlay ? "opacity-40" : ""}
-        ${isOverlay ? "shadow-lg cursor-grabbing" : "cursor-grab hover:shadow-sm"}
-        ${isOver ? "ring-2 ring-pink-400/60" : ""}
-      `}
+      className={`min-w-30 flex-none space-y-1 rounded-lg border border-pink-200 bg-pink-50/60 p-2 transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} ${isOver ? "ring-2 ring-pink-400/60" : ""} `}
     >
       {/* Header: sport · type + zone badge + save button */}
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-xs truncate">
+        <span className="truncate text-xs font-medium">
           {fields.sport ? getSportLabel(fields.sport) : "—"}
           {fields.workoutType &&
             ` · ${getWorkoutTypeLabel(fields.workoutType)}`}
         </span>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           {fields.heartRateZone && (
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full ${getZoneColor(fields.heartRateZone)}`}
+              className={`rounded-full px-1.5 py-0.5 text-[10px] ${getZoneColor(fields.heartRateZone)}`}
             >
               {getZoneLabel(fields.heartRateZone)}
             </span>
@@ -104,7 +88,7 @@ export function PillGroupCard({
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="h-4 w-4 text-pink-400 hover:text-pink-600 hover:bg-pink-100"
+                  className="h-4 w-4 text-pink-400 hover:bg-pink-100 hover:text-pink-600"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -121,7 +105,7 @@ export function PillGroupCard({
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-muted-foreground text-xs font-medium">
                     Save as preset
                   </span>
                   <Input
@@ -148,7 +132,7 @@ export function PillGroupCard({
       </div>
 
       {(fields.distance || fields.pace) && (
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2 text-[11px]">
           {fields.distance && <span>{fields.distance} km</span>}
           {fields.pace && <span>{fields.pace} /km</span>}
         </div>

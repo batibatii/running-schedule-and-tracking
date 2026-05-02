@@ -34,10 +34,7 @@ export function DroppableWorkoutCard({
       }}
       {...listeners}
       {...attributes}
-      className={`
-        transition-all duration-150
-        ${isOver ? "ring-2 ring-primary/60 rounded-md scale-[1.02]" : ""}
-      `}
+      className={`transition-all duration-150 ${isOver ? "ring-primary/60 scale-[1.02] rounded-md ring-2" : ""} `}
       style={{
         opacity: isDragging ? 0.5 : 1,
         cursor: "grab",

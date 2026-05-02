@@ -26,13 +26,7 @@ export function PresetChip({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`
-        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-        border border-indigo-200 bg-indigo-50 text-indigo-800
-        text-xs font-medium select-none transition-all
-        ${isDragging && !isOverlay ? "opacity-40" : ""}
-        ${isOverlay ? "shadow-lg cursor-grabbing" : "cursor-grab hover:shadow-sm"}
-      `}
+      className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} `}
     >
       <span>{preset.label}</span>
       {onDelete && (
@@ -43,7 +37,7 @@ export function PresetChip({
             e.stopPropagation();
             onDelete(preset.id);
           }}
-          className="text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100 ml-0.5 h-4 w-4"
+          className="ml-0.5 h-4 w-4 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
           aria-label="Delete preset"
         >
           <X className="size-3" />

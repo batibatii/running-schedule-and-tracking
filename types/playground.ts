@@ -7,11 +7,9 @@ export type PillFieldType =
   | "distance"
   | "pace";
 
-export type ComposeType = "pill" | "group";
-
 export interface Pill {
   id: string;
-  kind: ComposeType & "pill";
+  kind: "pill";
   fieldType: PillFieldType;
   value: string | number;
   label: string;
@@ -19,7 +17,7 @@ export interface Pill {
 
 export interface PillGroup {
   id: string;
-  kind: ComposeType & "group";
+  kind: "group";
   fields: PartialWorkoutFields;
   pills: Pill[];
   createdAt: number;

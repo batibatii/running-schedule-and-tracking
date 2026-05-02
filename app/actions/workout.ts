@@ -7,9 +7,11 @@ import {
   updateWorkout,
   deleteWorkout,
 } from "@/lib/dal/workout";
-import { Workout } from "@/types/workout";
-import { DayOfWeek } from "@/types/workout";
-import { WorkoutFormData } from "@/types/workoutValidation";
+import { Workout, DayOfWeek } from "@/types/workout";
+import {
+  WorkoutFormData,
+  PartialWorkoutUpdate,
+} from "@/types/workoutValidation";
 
 export async function fetchWorkoutsAction(
   weekStartDate: string,
@@ -37,7 +39,6 @@ export async function createWorkoutAction(
     ...data,
     dayOfWeek,
     weekStartDate,
-    
   });
 
   return workout;
@@ -74,7 +75,7 @@ export async function updateWorkoutAction(
 
 export async function updateWorkoutFieldAction(
   workoutId: string,
-  fields: Partial<WorkoutFormData>,
+  fields: PartialWorkoutUpdate,
 ) {
   const user = await requireAuth();
 

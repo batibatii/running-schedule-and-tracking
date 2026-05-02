@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { createLocalStorageStore } from "@/lib/factories/createLocalStorageStore";
+import { useLocalStorageStore } from "@/hooks/useLocalStorageStore";
 import {
   Pill,
   PillGroup,
@@ -8,61 +9,17 @@ import {
 } from "@/types/playground";
 import { Sport, WorkoutType, HeartRateZone } from "@/types/workout";
 
-const STORAGE_KEY = "playground-items";
-
 const WORKOUT_DEFAULTS = {
   sport: "running" as Sport,
   workoutType: "easy" as WorkoutType,
   heartRateZone: "zone-2" as HeartRateZone,
 };
 
-// Cached snapshot to ensure referential stability between calls
-let cachedRaw: string | null = null;
-let cachedItems: PlaygroundItem[] = [];
-
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  cachedRaw = null;
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function subscribe(callback: () => void) {
-  listeners = [...listeners, callback];
-  return () => {
-    listeners = listeners.filter((l) => l !== callback);
-  };
-}
-
-function getSnapshot(): PlaygroundItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw !== cachedRaw) {
-      cachedRaw = raw;
-      cachedItems = raw ? JSON.parse(raw) : [];
-    }
-    return cachedItems;
-  } catch {
-    return cachedItems;
-  }
-}
-
-const emptyItems: PlaygroundItem[] = [];
-function getServerSnapshot(): PlaygroundItem[] {
-  return emptyItems;
-}
-
-function writeItems(items: PlaygroundItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  emitChange();
-}
+const store = createLocalStorageStore<PlaygroundItem>("playground-items");
 
 export function usePlayground() {
-  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const items = useLocalStorageStore(store);
 
-  // Derived filtered arrays
   const pills = items.filter((item): item is Pill => item.kind === "pill");
   const groups = items.filter(
     (item): item is PillGroup => item.kind === "group",
@@ -80,33 +37,35 @@ export function usePlayground() {
       value,
       label,
     };
-    writeItems([...getSnapshot(), pill]);
+    store.write([...store.read(), pill]);
   }
 
   function addExistingPill(pill: Pill) {
-    writeItems([...getSnapshot(), pill]);
+    store.write([...store.read(), pill]);
   }
 
   function removePill(id: string) {
-    writeItems(getSnapshot().filter((item) => item.id !== id));
+    store.write(store.read().filter((item) => item.id !== id));
   }
 
   function addGroup(group: PillGroup) {
-    writeItems([...getSnapshot(), group]);
+    store.write([...store.read(), group]);
   }
 
   function updateGroup(id: string, updates: Partial<PillGroup>) {
-    writeItems(
-      getSnapshot().map((item) =>
-        item.id === id && item.kind === "group"
-          ? { ...item, ...updates }
-          : item,
-      ),
+    store.write(
+      store
+        .read()
+        .map((item) =>
+          item.id === id && item.kind === "group"
+            ? { ...item, ...updates }
+            : item,
+        ),
     );
   }
 
   function removeItem(id: string) {
-    writeItems(getSnapshot().filter((item) => item.id !== id));
+    store.write(store.read().filter((item) => item.id !== id));
   }
 
   function resolvePillToFields(pill: Pill): PartialWorkoutFields {

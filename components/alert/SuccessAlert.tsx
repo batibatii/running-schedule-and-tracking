@@ -9,8 +9,8 @@ export function SuccessAlert({ message, className }: SuccessAlertProps) {
   if (!message) return null;
 
   return (
-    <Alert className={`bg-white pl-2 border-green-200 ${className}`}>
-      <AlertDescription className="text-green-800 text-sm">
+    <Alert className={`border-green-200 bg-white pl-2 ${className}`}>
+      <AlertDescription className="text-sm text-green-800">
         {message}
       </AlertDescription>
     </Alert>

@@ -46,15 +46,7 @@ export function PillChip({
       }}
       {...listeners}
       {...attributes}
-      className={`
-        inline-flex items-center px-3 py-1 rounded-full
-        border text-sm font-medium select-none
-        transition-all flex-none
-        ${PILL_COLORS[pill.fieldType]}
-        ${isDragging && !isOverlay ? "opacity-40" : ""}
-        ${isOverlay ? "shadow-lg cursor-grabbing" : "cursor-grab hover:shadow-sm"}
-        ${isOver ? "ring-2 ring-pink-400/60" : ""}
-      `}
+      className={`inline-flex flex-none items-center rounded-full border px-3 py-1 text-sm font-medium transition-all select-none ${PILL_COLORS[pill.fieldType]} ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} ${isOver ? "ring-2 ring-pink-400/60" : ""} `}
     >
       {pill.label}
     </div>

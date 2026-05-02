@@ -29,7 +29,7 @@ export function useAsyncData<T = void>(): UseAsyncDataReturn<T> {
       setSuccess(true);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "An expected error occurred";
+        err instanceof Error ? err.message : "An unexpected error occurred";
       setError(errorMessage);
     } finally {
       setLoading(false);

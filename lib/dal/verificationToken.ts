@@ -1,12 +1,7 @@
 import { db } from "@/lib/db";
 import { verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import crypto from "crypto";
-
-export function generateVerificationToken(): string {
-  const hexString = crypto.randomBytes(32).toString("hex");
-  return hexString;
-}
+import { generateVerificationToken } from "@/lib/utils/token";
 
 export async function createVerificationToken(email: string) {
   await db
@@ -19,6 +14,15 @@ export async function createVerificationToken(email: string) {
     .insert(verificationTokens)
     .values({ identifier: email, token, expires });
   return token;
+}
+
+export async function getVerificationTokenByEmail(email: string) {
+  const tokens = await db
+    .select()
+    .from(verificationTokens)
+    .where(eq(verificationTokens.identifier, email));
+
+  return tokens[0] ?? null;
 }
 
 export async function verifyToken(token: string): Promise<string | null> {

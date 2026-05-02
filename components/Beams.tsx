@@ -93,9 +93,9 @@ const CanvasWrapper: FC<{ children: ReactNode }> = ({ children }) => (
   <Canvas
     dpr={[1, 2]}
     frameloop="always"
-    className="w-full h-full relative"
+    className="relative h-full w-full"
     gl={{ alpha: true, antialias: true }}
-    style={{ background: 'transparent' }}
+    style={{ background: "transparent" }}
   >
     {children}
   </Canvas>

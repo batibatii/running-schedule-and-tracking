@@ -8,13 +8,15 @@ export type HeartRateZone =
 export const SPORTS = ["running", "cycling", "swimming"] as const;
 export type Sport = (typeof SPORTS)[number];
 
-export type WorkoutType =
-  | "easy"
-  | "tempo"
-  | "long"
-  | "recovery"
-  | "race"
-  | "interval";
+export const WORKOUT_TYPES = [
+  "easy",
+  "tempo",
+  "long",
+  "recovery",
+  "race",
+  "interval",
+] as const;
+export type WorkoutType = (typeof WORKOUT_TYPES)[number];
 
 export type DayOfWeek =
   | "monday"

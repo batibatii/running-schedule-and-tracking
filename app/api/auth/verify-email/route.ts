@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/verification-token";
+import { verifyToken } from "@/lib/dal/verificationToken";
 import { markEmailAsVerified } from "@/lib/dal/users";
 
 /**
