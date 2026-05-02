@@ -210,7 +210,6 @@ export function WeeklySchedule() {
       return (
         <div style={{ cursor: "grabbing" }}>
           <WorkoutCard
-            id={workout.id}
             sport={workout.sport}
             workoutType={workout.workoutType}
             heartRateZone={workout.heartRateZone}
@@ -236,8 +235,8 @@ export function WeeklySchedule() {
     >
       <div className="space-y-4">
         {pendingChanges.size > 0 && (
-          <div className="flex items-center justify-end gap-2 p-3 bg-muted rounded-md">
-            <span className="text-sm text-muted-foreground mr-auto">
+          <div className="bg-muted flex items-center justify-end gap-2 rounded-md p-3">
+            <span className="text-muted-foreground mr-auto text-sm">
               {pendingChanges.size} workout{pendingChanges.size > 1 ? "s" : ""}{" "}
               moved
             </span>
@@ -280,7 +279,7 @@ export function WeeklySchedule() {
         </div>
 
         {/* Weekly Schedule Grid */}
-        <div className="grid grid-cols-7 gap-2 items-start max-w-385">
+        <div className="grid max-w-385 grid-cols-7 items-start gap-2">
           {daysOfWeek.map((day, index) => {
             const date = weekDates[index];
             const isToday =
@@ -291,11 +290,11 @@ export function WeeklySchedule() {
             return (
               <Card
                 key={day}
-                className={`min-h-60 flex flex-col cursor-pointer transition-colors ${isToday ? "ring-2 ring-primary" : isOffsetHighlighted ? "ring-2 ring-primary/50" : ""}`}
+                className={`flex min-h-60 cursor-pointer flex-col transition-colors ${isToday ? "ring-primary ring-2" : isOffsetHighlighted ? "ring-primary/50 ring-2" : ""}`}
               >
                 {/* Day Header */}
                 <div
-                  className="border-b p-3 shrink-0 "
+                  className="shrink-0 border-b p-3"
                   onClick={() => handleDayClick(date)}
                 >
                   <div className="text-sm font-semibold">{getDayName(day)}</div>
@@ -311,45 +310,41 @@ export function WeeklySchedule() {
                 </div>
 
                 {/* Workouts Container */}
-                <div className="flex flex-col flex-1">
-                  <div className="overflow-y-auto max-h-66">
+                <div className="flex flex-1 flex-col">
+                  <div className="max-h-66 overflow-y-auto">
                     <DroppableDay day={day}>
-                      <div className="px-2 py-4 space-y-2 flex-1">
-                        {getDisplayWorkouts()
-                          .filter(
+                      <div className="flex-1 space-y-2 px-2 py-4">
+                        {(() => {
+                          const dayWorkouts = getDisplayWorkouts().filter(
                             (w) =>
                               w.dayOfWeek === day &&
                               w.weekStartDate ===
                                 formatDateToISO(weekStartDate),
-                          )
-                          .map((workout) => (
-                            <DroppableWorkoutCard
-                              key={workout.id}
-                              id={workout.id}
-                            >
-                              <WorkoutCard
+                          );
+                          return dayWorkouts.length > 0 ? (
+                            dayWorkouts.map((workout) => (
+                              <DroppableWorkoutCard
+                                key={workout.id}
                                 id={workout.id}
-                                sport={workout.sport}
-                                workoutType={workout.workoutType}
-                                heartRateZone={workout.heartRateZone}
-                                distance={workout.distance ?? 0}
-                                duration={workout.duration}
-                                title={workout.title}
-                                notes={workout.notes}
-                                onClick={() => handleOpenDialog(day, workout)}
-                              />
-                            </DroppableWorkoutCard>
-                          ))}
-
-                        {getDisplayWorkouts().filter(
-                          (w) =>
-                            w.dayOfWeek === day &&
-                            w.weekStartDate === formatDateToISO(weekStartDate),
-                        ).length === 0 && (
-                          <div className="text-xs text-muted-foreground text-center py-8">
-                            No workouts
-                          </div>
-                        )}
+                              >
+                                <WorkoutCard
+                                  sport={workout.sport}
+                                  workoutType={workout.workoutType}
+                                  heartRateZone={workout.heartRateZone}
+                                  distance={workout.distance ?? 0}
+                                  duration={workout.duration}
+                                  title={workout.title}
+                                  notes={workout.notes}
+                                  onClick={() => handleOpenDialog(day, workout)}
+                                />
+                              </DroppableWorkoutCard>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground py-8 text-center text-xs">
+                              No workouts
+                            </div>
+                          );
+                        })()}
                       </div>
                     </DroppableDay>
                   </div>
@@ -361,7 +356,7 @@ export function WeeklySchedule() {
                       className="w-full"
                       onClick={() => handleOpenDialog(day)}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </div>
@@ -389,7 +384,6 @@ export function WeeklySchedule() {
           open={isDialogOpen}
           onOpenChange={handleCloseDialog}
           dayOfWeek={selectedDay}
-          weekStartDate={formatDateToISO(weekStartDate)}
           onSave={handleSaveWorkout}
           onDelete={handleDeleteWorkout}
           editWorkout={

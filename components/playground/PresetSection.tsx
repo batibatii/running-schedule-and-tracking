@@ -19,7 +19,7 @@ export function PresetSection({ presets, onDeletePreset }: PresetSectionProps) {
     <div className="mx-auto max-w-[85%]">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+        className="text-muted-foreground hover:text-foreground flex w-full items-center gap-1.5 text-xs transition-colors"
       >
         <ChevronRight
           className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
@@ -28,7 +28,7 @@ export function PresetSection({ presets, onDeletePreset }: PresetSectionProps) {
       </button>
 
       {isOpen && (
-        <div className="mt-2 flex flex-wrap gap-2 p-3 border rounded-lg bg-muted/20">
+        <div className="bg-muted/20 mt-2 flex flex-wrap gap-2 rounded-lg border p-3">
           {presets.map((preset) => (
             <PresetChip
               key={preset.id}

@@ -29,6 +29,7 @@ import {
   updateWorkoutFieldAction,
   deleteWorkoutAction,
 } from "@/app/actions/workout";
+import { PartialWorkoutUpdate } from "@/types/workoutValidation";
 
 interface UseDragDropManagerProps {
   workouts: Workout[] | null;
@@ -55,9 +56,7 @@ interface UseDragDropManagerProps {
   refreshWorkouts: () => void;
 }
 
-/**
- * Decompose a workout into individual pills.
- */
+//Decompose a workout into individual pills.
 function workoutToPills(workout: Workout): Pill[] {
   const pills: Pill[] = [];
 
@@ -152,7 +151,6 @@ export function useDragDropManager({
       const sourceType = active.data.current?.type as string;
       const targetType = over.data.current?.type as string;
 
-      // ── pill → trash ──
       if (sourceType === "pill" && targetType === "trash") {
         const pill = active.data.current?.pill as Pill;
         removePill(pill.id);
@@ -199,7 +197,7 @@ export function useDragDropManager({
         const oldValue = workout[fieldKey];
         const newValue = fields[fieldKey];
 
-        const updateFields = { ...fields } as Record<string, unknown>;
+        const updateFields: PartialWorkoutUpdate = { ...fields };
         if (fieldKey === "pace" && workout.distance) {
           updateFields.duration = calculateDuration(
             workout.distance,
@@ -227,7 +225,7 @@ export function useDragDropManager({
                 label: "Undo",
                 onClick: async () => {
                   try {
-                    const undoFields: Record<string, unknown> = {
+                    const undoFields: PartialWorkoutUpdate = {
                       [fieldKey]: oldValue,
                     };
                     if (updateFields.duration !== undefined) {
@@ -312,7 +310,9 @@ export function useDragDropManager({
 
         // Check sport ↔ workoutType compatibility with existing group fields
         const incomingSport =
-          pill.fieldType === "sport" ? (pill.value as Sport) : group.fields.sport;
+          pill.fieldType === "sport"
+            ? (pill.value as Sport)
+            : group.fields.sport;
         const incomingWorkoutType =
           pill.fieldType === "workoutType"
             ? (pill.value as WorkoutType)
@@ -342,7 +342,6 @@ export function useDragDropManager({
         return;
       }
 
-      // ── group → trash ──
       if (sourceType === "group" && targetType === "trash") {
         const group = active.data.current?.group as PillGroup;
         removeItem(group.id);
@@ -363,26 +362,19 @@ export function useDragDropManager({
         const defaults = getWorkoutDefaults(group.fields);
 
         try {
-          const workoutData: Record<string, unknown> = {
+          const workoutData = {
             sport: defaults.sport,
             workoutType: defaults.workoutType,
             heartRateZone: defaults.heartRateZone,
             distance: defaults.distance ?? 0,
             pace: defaults.pace,
+            duration:
+              defaults.distance && defaults.pace
+                ? calculateDuration(defaults.distance, defaults.pace)
+                : undefined,
           };
 
-          if (defaults.distance && defaults.pace) {
-            workoutData.duration = calculateDuration(
-              defaults.distance,
-              defaults.pace,
-            );
-          }
-
-          await createWorkoutAction(
-            workoutData as Parameters<typeof createWorkoutAction>[0],
-            day,
-            weekStartDateISO,
-          );
+          await createWorkoutAction(workoutData, day, weekStartDateISO);
           removeItem(group.id);
           refreshWorkouts();
         } catch {
@@ -399,7 +391,7 @@ export function useDragDropManager({
 
         if (!workout) return;
 
-        const updateFields = { ...group.fields } as Record<string, unknown>;
+        const updateFields: PartialWorkoutUpdate = { ...group.fields };
 
         // Recalculate duration if both distance and pace will be present
         const finalDistance = (group.fields.distance ?? workout.distance) as
@@ -480,7 +472,6 @@ export function useDragDropManager({
         return;
       }
 
-      // ── workout → trash ──
       if (sourceType === "workout" && targetType === "trash") {
         const workoutId = active.data.current?.workoutId as string;
         const workout = workouts?.find((w) => w.id === workoutId);
@@ -562,26 +553,19 @@ export function useDragDropManager({
         const defaults = getWorkoutDefaults(preset.fields);
 
         try {
-          const workoutData: Record<string, unknown> = {
+          const workoutData = {
             sport: defaults.sport,
             workoutType: defaults.workoutType,
             heartRateZone: defaults.heartRateZone,
             distance: defaults.distance ?? 0,
             pace: defaults.pace,
+            duration:
+              defaults.distance && defaults.pace
+                ? calculateDuration(defaults.distance, defaults.pace)
+                : undefined,
           };
 
-          if (defaults.distance && defaults.pace) {
-            workoutData.duration = calculateDuration(
-              defaults.distance,
-              defaults.pace,
-            );
-          }
-
-          await createWorkoutAction(
-            workoutData as Parameters<typeof createWorkoutAction>[0],
-            day,
-            weekStartDateISO,
-          );
+          await createWorkoutAction(workoutData, day, weekStartDateISO);
           refreshWorkouts();
         } catch {
           toast.error("Failed to create workout from preset");
@@ -597,7 +581,7 @@ export function useDragDropManager({
 
         if (!workout) return;
 
-        const updateFields = { ...preset.fields } as Record<string, unknown>;
+        const updateFields: PartialWorkoutUpdate = { ...preset.fields };
 
         const finalDistance = (preset.fields.distance ?? workout.distance) as
           | number
@@ -618,7 +602,6 @@ export function useDragDropManager({
         return;
       }
 
-      // ── preset → trash (delete preset) ──
       if (sourceType === "preset" && targetType === "trash") {
         const preset = active.data.current?.preset as Preset;
         removePreset(preset.id);

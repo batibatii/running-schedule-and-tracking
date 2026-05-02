@@ -10,7 +10,7 @@ export function ErrorAlert({ message, className }: ErrorAlertProps) {
 
   return (
     <Alert variant="destructive" className={`${className}`}>
-      <AlertTitle className="text-destructive/85 pl-2 pt-1 border-none ">
+      <AlertTitle className="text-destructive/85 border-none pt-1 pl-2">
         {message}
       </AlertTitle>
     </Alert>

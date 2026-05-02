@@ -19,7 +19,11 @@ interface GeneratorOption {
 interface GeneratorSectionProps {
   title: string;
   fieldType: PillFieldType;
-  onAddPill: (fieldType: PillFieldType, value: string | number, label: string) => void;
+  onAddPill: (
+    fieldType: PillFieldType,
+    value: string | number,
+    label: string,
+  ) => void;
   options?: GeneratorOption[];
   inputType?: "number" | "pace";
   inputPlaceholder?: string;
@@ -68,12 +72,16 @@ export function GeneratorSection({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+      <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
         {title}
       </span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" className="h-6 w-6 rounded-full">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-6 w-6 rounded-full"
+          >
             <Plus className="h-3 w-3" />
           </Button>
         </PopoverTrigger>
@@ -103,11 +111,15 @@ export function GeneratorSection({
                 autoFocus
               />
               {inputSuffix && (
-                <span className="text-xs text-muted-foreground self-center shrink-0">
+                <span className="text-muted-foreground shrink-0 self-center text-xs">
                   {inputSuffix}
                 </span>
               )}
-              <Button size="sm" className="h-8 shrink-0" onClick={handleInputSubmit}>
+              <Button
+                size="sm"
+                className="h-8 shrink-0"
+                onClick={handleInputSubmit}
+              >
                 Add
               </Button>
             </div>

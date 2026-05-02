@@ -7,12 +7,16 @@ export async function proxy(req: NextRequest) {
   const isAuthPage = req.nextUrl.pathname === "/";
   const isApiAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
 
-  console.log(
-    `[Auth] ${req.method} ${req.nextUrl.pathname} - User: ${token?.email || "anonymous"}`,
-  );
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      `[Auth] ${req.method} ${req.nextUrl.pathname} - User: ${token?.email || "anonymous"}`,
+    );
+  }
 
   if (isAuthPage && token) {
-    console.log(`[Auth] Redirecting logged-in user from / to /schedule`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Auth] Redirecting logged-in user from / to /schedule`);
+    }
     return NextResponse.redirect(new URL("/schedule", req.url));
   }
 

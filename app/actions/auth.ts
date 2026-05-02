@@ -1,15 +1,13 @@
 "use server";
 
 import { getUserByEmail, createUser } from "@/lib/dal/users";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { createVerificationToken } from "@/lib/verification-token";
+import {
+  createVerificationToken,
+  getVerificationTokenByEmail,
+} from "@/lib/dal/verificationToken";
 import { sendVerificationEmail } from "@/lib/email";
 import { ResendVerificationSchema } from "@/types/authValidation";
 import bcrypt from "bcrypt";
-import { db } from "@/lib/db";
-import { verificationTokens } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 
 interface AuthResult {
   success: boolean;
@@ -58,17 +56,6 @@ export async function signUpAction(
   }
 }
 
-export async function logoutAction() {
-  const cookieStore = await cookies();
-
-  cookieStore.delete("next-auth.session-token");
-  cookieStore.delete("__Secure-next-auth.session-token");
-  cookieStore.delete("next-auth.csrf-token");
-  cookieStore.delete("__Host-next-auth.csrf-token");
-
-  redirect("/");
-}
-
 export async function resendVerificationAction(
   email: string,
 ): Promise<AuthResult> {
@@ -98,13 +85,10 @@ export async function resendVerificationAction(
       };
     }
 
-    const existingToken = await db
-      .select()
-      .from(verificationTokens)
-      .where(eq(verificationTokens.identifier, email));
+    const existingToken = await getVerificationTokenByEmail(email);
 
-    if (existingToken.length > 0) {
-      const tokenAge = Date.now() - existingToken[0].createdAt.getTime();
+    if (existingToken) {
+      const tokenAge = Date.now() - existingToken.createdAt.getTime();
       const ONE_MINUTE = 60 * 1000;
 
       if (tokenAge < ONE_MINUTE) {

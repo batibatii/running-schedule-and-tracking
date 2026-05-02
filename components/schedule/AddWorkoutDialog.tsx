@@ -25,7 +25,18 @@ import { SuccessAlert } from "@/components/alert/SuccessAlert";
 import { ErrorAlert } from "@/components/alert/ErrorAlert";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { workoutFormSchema, WorkoutFormData } from "@/types/workoutValidation";
-import { DayOfWeek, WorkoutType, HeartRateZone, Sport, SPORTS } from "@/types/workout";
+import {
+  DayOfWeek,
+  WorkoutType,
+  HeartRateZone,
+  Sport,
+  SPORTS,
+  WORKOUT_TYPES,
+} from "@/types/workout";
+import {
+  getSportDisplayName,
+  WORKOUT_TYPE_LABELS,
+} from "@/lib/utils/workoutLabels";
 import { useEffect, useState } from "react";
 import { calculateDuration, calculatePaceFromDuration } from "@/lib/utils/pace";
 import {
@@ -43,7 +54,6 @@ interface AddOrEditWorkoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dayOfWeek: DayOfWeek;
-  weekStartDate: string;
   onSave: (workout: WorkoutFormData) => Promise<void>;
   onDelete?: (workoutId: string) => Promise<void>;
   editWorkout?: {
@@ -237,15 +247,15 @@ export function AddWorkoutDialog({
                   <SelectValue placeholder="Select sport" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SPORTS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                  {SPORTS.map((sport) => (
+                    <SelectItem key={sport} value={sport}>
+                      {getSportDisplayName(sport)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {errors.sport && (
-                <p className="text-sm text-destructive pl-1">
+                <p className="text-destructive pl-1 text-sm">
                   {errors.sport.message}
                 </p>
               )}
@@ -265,16 +275,15 @@ export function AddWorkoutDialog({
                   <SelectValue placeholder="Select workout type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="easy">Easy Run</SelectItem>
-                  <SelectItem value="tempo">Tempo Run</SelectItem>
-                  <SelectItem value="interval">Interval Training</SelectItem>
-                  <SelectItem value="long">Long Run</SelectItem>
-                  <SelectItem value="recovery">Recovery Run</SelectItem>
-                  <SelectItem value="race">Race</SelectItem>
+                  {WORKOUT_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {WORKOUT_TYPE_LABELS[type]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.workoutType && (
-                <p className="text-sm text-destructive pl-1">
+                <p className="text-destructive pl-1 text-sm">
                   {errors.workoutType.message}
                 </p>
               )}
@@ -302,7 +311,7 @@ export function AddWorkoutDialog({
                 </SelectContent>
               </Select>
               {errors.heartRateZone && (
-                <p className="text-sm text-destructive pl-1">
+                <p className="text-destructive pl-1 text-sm">
                   {errors.heartRateZone.message}
                 </p>
               )}
@@ -321,7 +330,7 @@ export function AddWorkoutDialog({
                 {...register("distance")}
               />
               {errors.distance && (
-                <p className="text-sm text-destructive pl-1">
+                <p className="text-destructive pl-1 text-sm">
                   {errors.distance.message}
                 </p>
               )}
@@ -336,7 +345,7 @@ export function AddWorkoutDialog({
                 {...register("pace")}
               />
               {errors.pace && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.pace.message}
                 </p>
               )}
@@ -352,7 +361,7 @@ export function AddWorkoutDialog({
                 {...register("duration")}
               />
               {errors.duration && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.duration.message}
                 </p>
               )}
@@ -367,7 +376,7 @@ export function AddWorkoutDialog({
                 {...register("title")}
               />
               {errors.title && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.title.message}
                 </p>
               )}
@@ -377,12 +386,12 @@ export function AddWorkoutDialog({
               <Label htmlFor="notes">Notes (optional)</Label>
               <Textarea
                 id="notes"
-                className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Training details, how you felt, etc."
                 {...register("notes")}
               />
               {errors.notes && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.notes.message}
                 </p>
               )}
@@ -401,7 +410,7 @@ export function AddWorkoutDialog({
                 Delete
               </Button>
             )}
-            <div className="flex gap-2 ml-auto">
+            <div className="ml-auto flex gap-2">
               {" "}
               <Button
                 type="button"

@@ -11,7 +11,6 @@ import {
 } from "@/lib/utils/workoutLabels";
 
 interface WorkoutCardProps {
-  id: string;
   sport: Sport;
   workoutType: WorkoutType;
   heartRateZone: HeartRateZone;
@@ -19,8 +18,6 @@ interface WorkoutCardProps {
   duration?: number;
   title?: string;
   notes?: string;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
   onClick?: () => void;
 }
 
@@ -36,35 +33,31 @@ export function WorkoutCard({
 }: WorkoutCardProps) {
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow h-25"
+      className="h-25 cursor-pointer transition-shadow hover:shadow-md"
       onClick={onClick}
     >
-      <CardContent className="p-2.5 space-y-1.5 h-full overflow-y-auto">
-        {/* Header: Type and Zone Badge */}
+      <CardContent className="h-full space-y-1.5 overflow-y-auto p-2.5">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-sm">
+          <span className="text-sm font-medium">
             {getSportLabel(sport)} · {getWorkoutTypeLabel(workoutType)}
           </span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${getZoneColor(heartRateZone)}`}
+            className={`rounded-full px-2 py-0.5 text-xs ${getZoneColor(heartRateZone)}`}
           >
             {getZoneLabel(heartRateZone)}
           </span>
         </div>
 
         {title && (
-          <p className="text-sm text-muted-foreground truncate">{title}</p>
+          <p className="text-muted-foreground truncate text-sm">{title}</p>
         )}
 
-        {/* Metrics: Distance and Duration */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-3 text-xs">
           <span>{distance} km</span>
           {duration && <span>{formatDuration(duration)}</span>}
         </div>
 
-        {notes && (
-          <p className="text-xs text-muted-foreground">{notes}</p>
-        )}
+        {notes && <p className="text-muted-foreground text-xs">{notes}</p>}
       </CardContent>
     </Card>
   );

@@ -2,13 +2,13 @@
 
 import { WeeklySchedule } from "@/components/schedule/WeeklySchedule";
 import PillNav from "@/components/PillNav";
-import { logoutAction } from "@/app/actions/auth";
+import { signOut } from "next-auth/react";
 
 export default function Schedule() {
   return (
     <>
       {" "}
-      <div className="w-full flex justify-end">
+      <div className="flex w-full justify-end">
         {" "}
         <PillNav
           logo="/running-man-icon.svg"
@@ -17,7 +17,11 @@ export default function Schedule() {
             { label: "Schedule", href: "/schedule" },
             { label: "Metrics", href: "/workouts" },
             { label: "Profile", href: "/settings" },
-            { label: "Logout", href: "#", onClick: () => logoutAction() },
+            {
+              label: "Logout",
+              href: "#",
+              onClick: () => signOut({ callbackUrl: "/" }),
+            },
           ]}
           activeHref="/schedule"
           baseColor="#f97316"

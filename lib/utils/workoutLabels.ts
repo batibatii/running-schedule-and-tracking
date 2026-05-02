@@ -1,9 +1,19 @@
 import { Sport, WorkoutType, HeartRateZone } from "@/types/workout";
+import { PartialWorkoutFields } from "@/types/playground";
 
 export const SPORT_WORKOUT_TYPES: Record<Sport, WorkoutType[]> = {
   running: ["easy", "tempo", "long", "recovery", "race", "interval"],
   cycling: ["easy", "tempo", "interval", "recovery", "race"],
   swimming: ["easy", "interval", "recovery"],
+};
+
+export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
+  easy: "Easy Run",
+  tempo: "Tempo",
+  interval: "Intervals",
+  long: "Long Run",
+  recovery: "Recovery Run",
+  race: "Race",
 };
 
 export function isCompatibleWorkoutType(
@@ -22,16 +32,17 @@ export function getSportLabel(sport: Sport): string {
   return labels[sport];
 }
 
-export function getWorkoutTypeLabel(type: WorkoutType): string {
-  const labels: Record<WorkoutType, string> = {
-    easy: "Easy Run",
-    tempo: "Tempo",
-    interval: "Intervals",
-    long: "Long Run",
-    recovery: "Recovery Run",
-    race: "Race",
+export function getSportDisplayName(sport: Sport): string {
+  const labels: Record<Sport, string> = {
+    running: "Running",
+    cycling: "Cycling",
+    swimming: "Swimming",
   };
-  return labels[type];
+  return labels[sport];
+}
+
+export function getWorkoutTypeLabel(type: WorkoutType): string {
+  return WORKOUT_TYPE_LABELS[type];
 }
 
 export function getZoneLabel(zone: HeartRateZone): string {
@@ -54,4 +65,14 @@ export function getZoneColor(zone: HeartRateZone): string {
     "zone-5": "bg-red-100 text-red-800",
   };
   return colors[zone];
+}
+
+export function generatePresetLabel(fields: PartialWorkoutFields): string {
+  const parts: string[] = [];
+  if (fields.sport) parts.push(getSportLabel(fields.sport));
+  if (fields.workoutType) parts.push(getWorkoutTypeLabel(fields.workoutType));
+  if (fields.distance) parts.push(`${fields.distance} km`);
+  if (fields.pace) parts.push(fields.pace);
+  if (fields.heartRateZone) parts.push(getZoneLabel(fields.heartRateZone));
+  return parts.join(" · ") || "Preset";
 }

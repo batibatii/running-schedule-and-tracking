@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SPORTS } from "./workout";
+import { SPORTS, WORKOUT_TYPES } from "./workout";
 
 export const workoutFormSchema = z.object({
   sport: z.enum(SPORTS).default("running"),
@@ -7,10 +7,8 @@ export const workoutFormSchema = z.object({
     .string()
     .min(1, "Please select a workout type")
     .refine(
-      (
-        val,
-      ): val is "easy" | "tempo" | "long" | "recovery" | "race" | "interval" =>
-        ["easy", "tempo", "long", "recovery", "race", "interval"].includes(val),
+      (val): val is (typeof WORKOUT_TYPES)[number] =>
+        (WORKOUT_TYPES as readonly string[]).includes(val),
       { message: "Invalid workout type" },
     ),
 
@@ -96,3 +94,12 @@ export type UpdateWorkoutInputType = z.infer<typeof updateWorkoutSchema>;
 export type CreateWorkoutInputType = z.infer<typeof createWorkoutSchema>;
 
 export type WorkoutFormData = z.infer<typeof workoutFormSchema>;
+
+/**
+ * Post-transform partial type for field-level updates (e.g., DnD merges).
+ * Matches what the DAL's `updateWorkout` actually accepts — numeric distance/duration,
+ * not the pre-transform string types from the form schema.
+ */
+export type PartialWorkoutUpdate = Partial<CreateWorkoutInputType> & {
+  completed?: boolean;
+};

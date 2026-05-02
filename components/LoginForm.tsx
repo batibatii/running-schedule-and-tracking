@@ -116,20 +116,20 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg border">
+    <div className="bg-card w-full max-w-md space-y-6 rounded-lg border p-8 shadow-lg">
       <div className="space-y-2 text-center">
         <h2 className="text-3xl font-bold tracking-tight">
           Track Your Running!
         </h2>
         <p className="text-muted-foreground">
-          {needVerification ? "Verify your email to continue" : "Enter your credentials to login"}
+          {needVerification
+            ? "Verify your email to continue"
+            : "Enter your credentials to login"}
         </p>
       </div>
 
-      {/* Show error alerts */}
       {error && !needVerification && <ErrorAlert message={error} />}
 
-      {/* Show success only when NOT in verification mode */}
       {success && !needVerification && (
         <SuccessAlert
           message="Login successful! Redirecting..."
@@ -137,10 +137,9 @@ export default function LoginForm() {
         />
       )}
 
-      {/* Email Verification Card - Replaces login form */}
       {needVerification ? (
         <div className="space-y-4">
-          <div className="p-6 bg-orange-50 border border-orange-200 rounded-lg space-y-4">
+          <div className="space-y-4 rounded-lg border border-orange-200 bg-orange-50 p-6">
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-orange-900">
                 📧 Email Verification Required
@@ -148,11 +147,12 @@ export default function LoginForm() {
               <p className="text-sm text-orange-800">
                 We&apos;ve sent a verification email to:
               </p>
-              <p className="text-sm font-medium text-orange-900 bg-white px-3 py-2 rounded border border-orange-200">
+              <p className="rounded border border-orange-200 bg-white px-3 py-2 text-sm font-medium text-orange-900">
                 {unverifiedEmail}
               </p>
-              <p className="text-sm text-orange-800 mt-2">
-                Please check your inbox and click the verification link to activate your account.
+              <p className="mt-2 text-sm text-orange-800">
+                Please check your inbox and click the verification link to
+                activate your account.
               </p>
             </div>
 
@@ -184,7 +184,6 @@ export default function LoginForm() {
           </div>
         </div>
       ) : (
-        // Login Form - Hidden when verification is needed
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -205,7 +204,9 @@ export default function LoginForm() {
               placeholder="Enter your password"
               {...register("password")}
             />
-            {errors.password && <ErrorAlert message={errors.password.message} />}
+            {errors.password && (
+              <ErrorAlert message={errors.password.message} />
+            )}
           </div>
 
           <div className="space-y-2 pt-2">
@@ -228,10 +229,10 @@ export default function LoginForm() {
             </Button>
           </div>
 
-          <div className="flex gap-2 items-center">
-            <div className="border flex-1"></div>
-            <span className="text-sm text-muted-foreground">OR</span>
-            <div className="border flex-1"></div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 border"></div>
+            <span className="text-muted-foreground text-sm">OR</span>
+            <div className="flex-1 border"></div>
           </div>
 
           <Button
@@ -243,7 +244,7 @@ export default function LoginForm() {
               console.log("Strava login clicked");
             }}
           >
-            <StravaIcon className="w-5 h-5" />
+            <StravaIcon className="h-5 w-5" />
             Continue with Strava
           </Button>
         </form>

@@ -8,25 +8,24 @@ import {
   PartialWorkoutFields,
   DragItemType,
 } from "@/types/playground";
-import { SPORTS } from "@/types/workout";
+import { SPORTS, WORKOUT_TYPES } from "@/types/workout";
+import {
+  getSportDisplayName,
+  WORKOUT_TYPE_LABELS,
+} from "@/lib/utils/workoutLabels";
 import { GeneratorSection } from "./GeneratorSection";
 import { PillChip } from "./PillChip";
 import { PillGroupCard } from "./PillGroupCard";
 
-
-const SPORT_OPTIONS = SPORTS.map((s) => ({
-  value: s,
-  label: s.charAt(0).toUpperCase() + s.slice(1),
+const SPORT_OPTIONS = SPORTS.map((sport) => ({
+  value: sport,
+  label: getSportDisplayName(sport),
 }));
 
-const WORKOUT_TYPE_OPTIONS = [
-  { value: "easy", label: "Easy Run" },
-  { value: "tempo", label: "Tempo" },
-  { value: "interval", label: "Interval" },
-  { value: "long", label: "Long Run" },
-  { value: "recovery", label: "Recovery" },
-  { value: "race", label: "Race" },
-];
+const WORKOUT_TYPE_OPTIONS = WORKOUT_TYPES.map((type) => ({
+  value: type,
+  label: WORKOUT_TYPE_LABELS[type],
+}));
 
 interface PlaygroundAreaProps {
   items: PlaygroundItem[];
@@ -56,21 +55,18 @@ export function PlaygroundArea({
 
   const activePillFieldType =
     activeDragType === "pill"
-      ? (items.find(
+      ? items.find(
           (item): item is Pill => item.kind === "pill" && item.id === activeId,
-        ))?.fieldType
+        )?.fieldType
       : undefined;
 
   return (
     <div
       ref={setNodeRef}
-      className={`
-        border rounded-lg p-4 bg-muted/30 transition-all
-        ${isOver ? "ring-2 ring-primary/40" : ""}
-      `}
+      className={`bg-muted/30 rounded-lg border p-4 transition-all ${isOver ? "ring-primary/40 ring-2" : ""} `}
     >
-      <div className="grid grid-rows-[auto_1fr_auto] gap-4 min-h-40">
-        <div className="flex justify-between items-start">
+      <div className="grid min-h-40 grid-rows-[auto_1fr_auto] gap-4">
+        <div className="flex items-start justify-between">
           <GeneratorSection
             title="Sport"
             fieldType="sport"
@@ -86,9 +82,9 @@ export function PlaygroundArea({
           />
         </div>
 
-        <div className="flex flex-wrap items-start gap-2 content-start min-h-16 p-2 rounded-md">
+        <div className="flex min-h-16 flex-wrap content-start items-start gap-2 rounded-md p-2">
           {items.length === 0 && !isDragActive && (
-            <span className="text-xs text-muted-foreground self-center mx-auto">
+            <span className="text-muted-foreground mx-auto self-center text-xs">
               Create items using the + buttons, then drag them to your schedule
             </span>
           )}
@@ -113,7 +109,7 @@ export function PlaygroundArea({
           )}
         </div>
 
-        <div className="flex justify-between items-end">
+        <div className="flex items-end justify-between">
           <GeneratorSection
             title="Workout Type"
             fieldType="workoutType"
