@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import { WorkoutType, HeartRateZone, Sport } from "@/types/workout";
 import { formatDuration } from "@/lib/utils/pace";
 import {
@@ -9,6 +8,7 @@ import {
   getZoneLabel,
   getZoneColor,
 } from "@/lib/utils/workoutLabels";
+import { SportIcon } from "@/components/icons/SportIcon";
 
 interface WorkoutCardProps {
   sport: Sport;
@@ -18,8 +18,18 @@ interface WorkoutCardProps {
   duration?: number;
   title?: string;
   notes?: string;
+  completed?: boolean;
   onClick?: () => void;
 }
+
+const WORKOUT_TYPE_ICON_BACKGROUND: Record<WorkoutType, string> = {
+  easy: "bg-workout-easy",
+  tempo: "bg-workout-tempo",
+  long: "bg-workout-long",
+  recovery: "bg-workout-recovery",
+  race: "bg-workout-race",
+  interval: "bg-workout-interval",
+};
 
 export function WorkoutCard({
   sport,
@@ -27,38 +37,64 @@ export function WorkoutCard({
   heartRateZone,
   distance,
   duration,
-  title,
-  notes,
+  completed,
   onClick,
 }: WorkoutCardProps) {
   return (
-    <Card
-      className="h-25 cursor-pointer transition-shadow hover:shadow-md"
+    <button
       onClick={onClick}
+      className="group border-line bg-surface relative block w-full cursor-pointer rounded-[18px] border p-3 text-left transition-all hover:-translate-y-px hover:shadow-(--shadow-sm)"
     >
-      <CardContent className="h-full space-y-1.5 overflow-y-auto p-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
-            {getSportLabel(sport)} · {getWorkoutTypeLabel(workoutType)}
-          </span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs ${getZoneColor(heartRateZone)}`}
+      {/* Status indicator — top right corner */}
+      {completed ? (
+        <span
+          title="Completed"
+          className="bg-mint-deep absolute top-2.5 right-2.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded-full text-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width={11}
+            height={11}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            {getZoneLabel(heartRateZone)}
-          </span>
-        </div>
+            <path d="M5 12l5 5 9-11" />
+          </svg>
+        </span>
+      ) : (
+        <span className="text-ink-faint absolute top-2.5 right-2.5 text-[10px] tracking-[0.06em] uppercase">
+          planned
+        </span>
+      )}
 
-        {title && (
-          <p className="text-muted-foreground truncate text-sm">{title}</p>
+      {/* Header row */}
+      <div className="mt-4 mb-1.5 flex items-center gap-1.5">
+        <span
+          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full ${WORKOUT_TYPE_ICON_BACKGROUND[workoutType]}`}
+        >
+          <SportIcon sport={sport} size={12} />
+        </span>
+        <span className="text-[13px] font-semibold">
+          {getSportLabel(sport)} &middot; {getWorkoutTypeLabel(workoutType)}
+        </span>
+      </div>
+
+      {/* Stats row */}
+      <div className="text-ink-soft flex items-center gap-2.5 font-mono text-xs">
+        {distance > 0 && <span>{distance} km</span>}
+        {duration != null && duration > 0 && (
+          <span>{formatDuration(duration)}</span>
         )}
-
-        <div className="text-muted-foreground flex items-center gap-3 text-xs">
-          <span>{distance} km</span>
-          {duration && <span>{formatDuration(duration)}</span>}
-        </div>
-
-        {notes && <p className="text-muted-foreground text-xs">{notes}</p>}
-      </CardContent>
-    </Card>
+        <span
+          className={`ml-auto rounded-full px-1.75 py-px text-[10px] font-semibold ${getZoneColor(heartRateZone)}`}
+        >
+          {getZoneLabel(heartRateZone)}
+        </span>
+      </div>
+    </button>
   );
 }

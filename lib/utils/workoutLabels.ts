@@ -58,11 +58,11 @@ export function getZoneLabel(zone: HeartRateZone): string {
 
 export function getZoneColor(zone: HeartRateZone): string {
   const colors: Record<HeartRateZone, string> = {
-    "zone-1": "bg-cyan-100 text-cyan-800",
-    "zone-2": "bg-green-100 text-green-800",
-    "zone-3": "bg-yellow-100 text-yellow-800",
-    "zone-4": "bg-orange-100 text-orange-800",
-    "zone-5": "bg-red-100 text-red-800",
+    "zone-1": "bg-z1 text-foreground",
+    "zone-2": "bg-z2 text-foreground",
+    "zone-3": "bg-z3 text-foreground",
+    "zone-4": "bg-z4 text-foreground",
+    "zone-5": "bg-z5 text-foreground",
   };
   return colors[zone];
 }
