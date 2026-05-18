@@ -53,6 +53,7 @@ interface UseDragDropManagerProps {
     pace?: string;
   };
   removePreset: (id: string) => void;
+  restorePreset: (preset: Preset) => void;
   refreshWorkouts: () => void;
 }
 
@@ -119,6 +120,7 @@ export function useDragDropManager({
   resolvePillToFields,
   getWorkoutDefaults,
   removePreset,
+  restorePreset,
   refreshWorkouts,
 }: UseDragDropManagerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -255,7 +257,13 @@ export function useDragDropManager({
 
         // Don't merge pills with the same field type
         if (draggedPill.fieldType === targetPill.fieldType) {
-          toast.warning("Cannot merge two pills of the same type");
+          if (draggedPill.fieldType === "sport") {
+            toast.warning(
+              `Cannot merge "${getSportLabel(draggedPill.value as Sport)}" with "${getSportLabel(targetPill.value as Sport)}"`,
+            );
+          } else {
+            toast.warning("Cannot merge two pills of the same type");
+          }
           return;
         }
 
@@ -308,6 +316,20 @@ export function useDragDropManager({
         const pill = active.data.current?.pill as Pill;
         const group = over.data.current?.group as PillGroup;
 
+        // Warn when merging a different sport into a group
+        // Groups without an explicit sport default to "running" since workout
+        // type labels are running-centric (e.g. "Easy Run", "Long Run")
+        const groupSport = group.fields.sport ?? "running";
+        if (
+          pill.fieldType === "sport" &&
+          (pill.value as Sport) !== groupSport
+        ) {
+          toast.warning(
+            `Cannot merge "${getSportLabel(pill.value as Sport)}" into a "${getSportLabel(groupSport)}" group`,
+          );
+          return;
+        }
+
         // Check sport ↔ workoutType compatibility with existing group fields
         const incomingSport =
           pill.fieldType === "sport"
@@ -342,10 +364,39 @@ export function useDragDropManager({
         return;
       }
 
+      // ── group → group-card (merge groups if sports don't conflict) ──
+      if (sourceType === "group" && targetType === "group-card") {
+        const draggedGroup = active.data.current?.group as PillGroup;
+        const targetGroup = over.data.current?.group as PillGroup;
+
+        const draggedSport = draggedGroup.fields.sport ?? "running";
+        const targetSport = targetGroup.fields.sport ?? "running";
+
+        if (draggedSport !== targetSport) {
+          toast.warning(
+            `Cannot merge a "${getSportLabel(draggedSport)}" group into a "${getSportLabel(targetSport)}" group`,
+          );
+          return;
+        }
+
+        const mergedFields: PartialWorkoutFields = {
+          ...targetGroup.fields,
+          ...draggedGroup.fields,
+        };
+
+        removeItem(draggedGroup.id);
+        updateGroup(targetGroup.id, {
+          fields: mergedFields,
+          pills: [...targetGroup.pills, ...draggedGroup.pills],
+        });
+        return;
+      }
+
       if (sourceType === "group" && targetType === "trash") {
         const group = active.data.current?.group as PillGroup;
         removeItem(group.id);
         toast.success("Group deleted", {
+          description: "You can undo this action",
           action: {
             label: "Undo",
             onClick: () => addGroup(group),
@@ -489,6 +540,7 @@ export function useDragDropManager({
           toast.success(
             `"${workout?.title || workout?.workoutType || "Workout"}" deleted`,
             {
+              description: "You can undo this action",
               action: {
                 label: "Undo",
                 onClick: async () => {
@@ -605,7 +657,14 @@ export function useDragDropManager({
       if (sourceType === "preset" && targetType === "trash") {
         const preset = active.data.current?.preset as Preset;
         removePreset(preset.id);
-        toast.success(`Preset "${preset.label}" deleted`);
+        toast.success(`Preset "${preset.label}" deleted`, {
+          description: "You can undo this action",
+          action: {
+            label: "Undo",
+            onClick: () => restorePreset(preset),
+          },
+          duration: 5000,
+        });
         return;
       }
     },
@@ -621,6 +680,7 @@ export function useDragDropManager({
       resolvePillToFields,
       getWorkoutDefaults,
       removePreset,
+      restorePreset,
       refreshWorkouts,
     ],
   );

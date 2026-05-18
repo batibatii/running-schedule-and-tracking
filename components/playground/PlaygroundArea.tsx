@@ -96,7 +96,6 @@ interface PlaygroundAreaProps {
   activeDragType: DragItemType | null;
   onSaveAsPreset?: (label: string, fields: PartialWorkoutFields) => void;
   presets?: Preset[];
-  onDeletePreset?: (id: string) => void;
 }
 
 export function PlaygroundArea({
@@ -107,19 +106,11 @@ export function PlaygroundArea({
   activeDragType,
   onSaveAsPreset,
   presets,
-  onDeletePreset,
 }: PlaygroundAreaProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "playground-drop",
     data: { type: "playground" },
   });
-
-  const activePillFieldType =
-    activeDragType === "pill"
-      ? items.find(
-          (item): item is Pill => item.kind === "pill" && item.id === activeId,
-        )?.fieldType
-      : undefined;
 
   return (
     <section
@@ -168,11 +159,7 @@ export function PlaygroundArea({
             <PillChip
               key={item.id}
               pill={item}
-              isMergeTarget={
-                activeDragType === "pill" &&
-                activeId !== item.id &&
-                activePillFieldType !== item.fieldType
-              }
+              isMergeTarget={activeDragType === "pill" && activeId !== item.id}
             />
           ) : (
             <PillGroupCard
@@ -205,9 +192,7 @@ export function PlaygroundArea({
       </div>
 
       {/* Presets footer */}
-      {presets && onDeletePreset && (
-        <PresetSection presets={presets} onDeletePreset={onDeletePreset} />
-      )}
+      {presets && presets.length > 0 && <PresetSection presets={presets} />}
     </section>
   );
 }

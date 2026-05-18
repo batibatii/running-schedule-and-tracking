@@ -81,7 +81,7 @@ export function WeeklySchedule() {
     getWorkoutDefaults,
   } = usePlayground();
 
-  const { presets, addPreset, removePreset } = usePresets();
+  const { presets, addPreset, removePreset, restorePreset } = usePresets();
 
   const {
     activeId,
@@ -106,6 +106,7 @@ export function WeeklySchedule() {
     resolvePillToFields,
     getWorkoutDefaults,
     removePreset,
+    restorePreset,
     refreshWorkouts,
   });
 
@@ -362,7 +363,6 @@ export function WeeklySchedule() {
           activeDragType={activeDragType}
           onSaveAsPreset={addPreset}
           presets={presets}
-          onDeletePreset={removePreset}
         />
 
         <AddWorkoutDialog

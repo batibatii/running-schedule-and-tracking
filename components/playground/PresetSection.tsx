@@ -5,10 +5,9 @@ import { PresetChip } from "./PresetChip";
 
 interface PresetSectionProps {
   presets: Preset[];
-  onDeletePreset: (id: string) => void;
 }
 
-export function PresetSection({ presets, onDeletePreset }: PresetSectionProps) {
+export function PresetSection({ presets }: PresetSectionProps) {
   if (presets.length === 0) return null;
 
   return (
@@ -17,7 +16,7 @@ export function PresetSection({ presets, onDeletePreset }: PresetSectionProps) {
         Presets ({presets.length})
       </span>
       {presets.map((preset) => (
-        <PresetChip key={preset.id} preset={preset} onDelete={onDeletePreset} />
+        <PresetChip key={preset.id} preset={preset} />
       ))}
     </div>
   );

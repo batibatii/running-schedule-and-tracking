@@ -8,11 +8,11 @@ export const SPORT_WORKOUT_TYPES: Record<Sport, WorkoutType[]> = {
 };
 
 export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
-  easy: "Easy Run",
+  easy: "Easy",
   tempo: "Tempo",
   interval: "Intervals",
-  long: "Long Run",
-  recovery: "Recovery Run",
+  long: "Long",
+  recovery: "Recovery",
   race: "Race",
 };
 
@@ -34,9 +34,9 @@ export function getSportLabel(sport: Sport): string {
 
 export function getSportDisplayName(sport: Sport): string {
   const labels: Record<Sport, string> = {
-    running: "Running",
-    cycling: "Cycling",
-    swimming: "Swimming",
+    running: "Run",
+    cycling: "Cycle",
+    swimming: "Swim",
   };
   return labels[sport];
 }
