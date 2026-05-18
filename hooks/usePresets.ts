@@ -21,5 +21,9 @@ export function usePresets() {
     store.write(store.read().filter((p) => p.id !== id));
   }
 
-  return { presets, addPreset, removePreset };
+  function restorePreset(preset: Preset) {
+    store.write([...store.read(), preset]);
+  }
+
+  return { presets, addPreset, removePreset, restorePreset };
 }
