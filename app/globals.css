@@ -8,6 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -44,77 +45,171 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* V1 accent palette */
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-soft: var(--ink-soft);
+  --color-coral-deep: var(--coral-deep);
+  --color-peach: var(--peach);
+  --color-coral: var(--coral);
+  --color-mint: var(--mint);
+  --color-mint-deep: var(--mint-deep);
+  --color-butter: var(--butter);
+  --color-lilac: var(--lilac);
+  --color-sky: var(--sky);
+  --color-surface: var(--surface);
+  --color-bg-soft: var(--bg-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  /* Zone colors */
+  --color-z1: var(--z1);
+  --color-z2: var(--z2);
+  --color-z3: var(--z3);
+  --color-z4: var(--z4);
+  --color-z5: var(--z5);
+
+  /* Sport colors */
+  --color-sport-running: var(--sport-running);
+  --color-sport-cycling: var(--sport-cycling);
+  --color-sport-swimming: var(--sport-swimming);
+
+  /* Workout type colors */
+  --color-workout-easy: var(--workout-easy);
+  --color-workout-tempo: var(--workout-tempo);
+  --color-workout-long: var(--workout-long);
+  --color-workout-recovery: var(--workout-recovery);
+  --color-workout-race: var(--workout-race);
+  --color-workout-interval: var(--workout-interval);
 }
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.165 0.002 286.375);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.165 0.002 286.375);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.165 0.002 286.375);
-  --primary: oklch(0.647 0.196 40.849);
-  --primary-foreground: oklch(0.988 0 0);
-  --secondary: oklch(0.966 0.002 286.375);
-  --secondary-foreground: oklch(0.231 0.004 286.375);
-  --muted: oklch(0.966 0.002 286.375);
-  --muted-foreground: oklch(0.545 0.006 286.375);
-  --accent: oklch(0.966 0.002 286.375);
-  --accent-foreground: oklch(0.231 0.004 286.375);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.988 0 0);
-  --border: oklch(0.921 0.003 286.375);
-  --input: oklch(0.921 0.003 286.375);
-  --ring: oklch(0.647 0.196 40.849);
-  --chart-1: oklch(0.647 0.196 40.849);
-  --chart-2: oklch(69.979% 0.17932 133.879);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.988 0 0);
-  --sidebar-foreground: oklch(0.165 0.002 286.375);
-  --sidebar-primary: oklch(0.647 0.196 40.849);
-  --sidebar-primary-foreground: oklch(0.988 0 0);
-  --sidebar-accent: oklch(0.966 0.002 286.375);
-  --sidebar-accent-foreground: oklch(0.231 0.004 286.375);
-  --sidebar-border: oklch(0.921 0.003 286.375);
-  --sidebar-ring: oklch(0.647 0.196 40.849);
+
+  /* V1 Crisp — Warm pastel palette */
+  --background: #fff7f2;
+  --foreground: #221912;
+  --card: #ffffff;
+  --card-foreground: #221912;
+  --popover: #ffffff;
+  --popover-foreground: #221912;
+  --primary: #ff8b83;
+  --primary-foreground: #ffffff;
+  --secondary: #fcefe5;
+  --secondary-foreground: #221912;
+  --muted: #fcefe5;
+  --muted-foreground: #6b5c53;
+  --accent: #fcefe5;
+  --accent-foreground: #221912;
+  --destructive: #e5534b;
+  --destructive-foreground: #ffffff;
+  --border: #efe3d7;
+  --input: #efe3d7;
+  --ring: #ff8b83;
+
+  /* V1 extended tokens */
+  --surface: #ffffff;
+  --bg-soft: #fcefe5;
+  --ink-soft: #6b5c53;
+  --ink-faint: #a89a8f;
+  --line: #efe3d7;
+  --line-strong: #e2d2c2;
+
+  /* Accent palette */
+  --peach: #ffd3b6;
+  --peach-deep: #ffb088;
+  --coral: #ffaaa5;
+  --coral-deep: #ff8b83;
+  --mint: #a8e6cf;
+  --mint-deep: #7dd3b0;
+  --butter: #ffe5a8;
+  --lilac: #d9c7ff;
+  --sky: #bcddf5;
+
+  /* Sport colors */
+  --sport-running: #ffd3b6;
+  --sport-cycling: #bcddf5;
+  --sport-swimming: #a8e6cf;
+
+  /* Workout type colors */
+  --workout-easy: #c8f2dc;
+  --workout-tempo: #ffd3b6;
+  --workout-long: #d9c7ff;
+  --workout-recovery: #e8f0e3;
+  --workout-race: #ffaaa5;
+  --workout-interval: #ffe5a8;
+
+  /* HR zones */
+  --z1: #c8e7f2;
+  --z2: #bfebd9;
+  --z3: #ffe5a8;
+  --z4: #ffd3b6;
+  --z5: #ffaaa5;
+
+  /* Charts (mapped to accents) */
+  --chart-1: #ff8b83;
+  --chart-2: #7dd3b0;
+  --chart-3: #bcddf5;
+  --chart-4: #ffe5a8;
+  --chart-5: #d9c7ff;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #221912;
+  --sidebar-primary: #ff8b83;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fcefe5;
+  --sidebar-accent-foreground: #221912;
+  --sidebar-border: #efe3d7;
+  --sidebar-ring: #ff8b83;
+
+  /* Shadows — warm cast */
+  --shadow-xs: 0 1px 0 rgba(34, 25, 18, 0.04);
+  --shadow-sm:
+    0 1px 2px rgba(34, 25, 18, 0.04), 0 2px 6px rgba(34, 25, 18, 0.04);
+  --shadow-md: 0 4px 14px rgba(34, 25, 18, 0.06);
+  --shadow-lg: 0 12px 32px rgba(34, 25, 18, 0.1);
 }
 
 .dark {
-  --background: oklch(0.165 0.002 286.375);
-  --foreground: oklch(0.988 0 0);
-  --card: oklch(0.165 0.002 286.375);
-  --card-foreground: oklch(0.988 0 0);
-  --popover: oklch(0.165 0.002 286.375);
-  --popover-foreground: oklch(0.988 0 0);
-  --primary: oklch(0.736 0.159 53.056);
-  --primary-foreground: oklch(0.231 0.004 286.375);
-  --secondary: oklch(0.269 0.005 286.375);
-  --secondary-foreground: oklch(0.988 0 0);
-  --muted: oklch(0.269 0.005 286.375);
-  --muted-foreground: oklch(0.704 0.008 286.375);
-  --accent: oklch(0.269 0.005 286.375);
-  --accent-foreground: oklch(0.988 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.988 0 0);
-  --border: oklch(0.269 0.005 286.375);
-  --input: oklch(0.269 0.005 286.375);
-  --ring: oklch(0.736 0.159 53.056);
-  --chart-1: oklch(0.736 0.159 53.056);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.165 0.002 286.375);
-  --sidebar-foreground: oklch(0.988 0 0);
-  --sidebar-primary: oklch(0.736 0.159 53.056);
-  --sidebar-primary-foreground: oklch(0.231 0.004 286.375);
-  --sidebar-accent: oklch(0.269 0.005 286.375);
-  --sidebar-accent-foreground: oklch(0.988 0 0);
-  --sidebar-border: oklch(0.269 0.005 286.375);
-  --sidebar-ring: oklch(0.736 0.159 53.056);
+  --background: #1a1820;
+  --foreground: #f4efe6;
+  --card: #2a2632;
+  --card-foreground: #f4efe6;
+  --popover: #2a2632;
+  --popover-foreground: #f4efe6;
+  --primary: #ff8b83;
+  --primary-foreground: #1a1820;
+  --secondary: #232029;
+  --secondary-foreground: #f4efe6;
+  --muted: #232029;
+  --muted-foreground: #b5afa4;
+  --accent: #232029;
+  --accent-foreground: #f4efe6;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #f4efe6;
+  --border: #3a3540;
+  --input: #3a3540;
+  --ring: #ff8b83;
+  --surface: #2a2632;
+  --bg-soft: #232029;
+  --ink-soft: #b5afa4;
+  --ink-faint: #7a7470;
+  --line: #3a3540;
+  --line-strong: #4a4450;
+  --chart-1: #ff8b83;
+  --chart-2: #a5d67b;
+  --chart-3: #b5c7f5;
+  --chart-4: #ffe5a8;
+  --chart-5: #d9c7ff;
+  --sidebar: #1a1820;
+  --sidebar-foreground: #f4efe6;
+  --sidebar-primary: #ff8b83;
+  --sidebar-primary-foreground: #1a1820;
+  --sidebar-accent: #232029;
+  --sidebar-accent-foreground: #f4efe6;
+  --sidebar-border: #3a3540;
+  --sidebar-ring: #ff8b83;
 }
 
 @layer base {

@@ -28,6 +28,7 @@ interface GeneratorSectionProps {
   inputType?: "number" | "pace";
   inputPlaceholder?: string;
   inputSuffix?: string;
+  align?: "left" | "right";
 }
 
 export function GeneratorSection({
@@ -38,6 +39,7 @@ export function GeneratorSection({
   inputType,
   inputPlaceholder,
   inputSuffix,
+  align = "left",
 }: GeneratorSectionProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -70,62 +72,68 @@ export function GeneratorSection({
     }
   };
 
+  const isRight = align === "right";
+
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-        {title}
-      </span>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-6 w-6 rounded-full"
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-2" align="start">
-          {options ? (
-            <div className="flex flex-col gap-1">
-              {options.map((option) => (
+    <div
+      className={`flex flex-col gap-2 ${isRight ? "items-end" : "items-start"}`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-ink-faint text-[11px] tracking-widest uppercase">
+          {title}
+        </span>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-xs"
+              className="border-line bg-surface hover:bg-bg-soft h-5.5 w-5.5 rounded-full"
+            >
+              <Plus className="h-2.75 w-2.75" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            {options ? (
+              <div className="flex flex-col gap-1">
+                {options.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start text-sm"
+                    onClick={() => handleOptionClick(option)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleSubmitOnKeyboardEnterEvent}
+                  placeholder={inputPlaceholder}
+                  className="h-8 text-sm"
+                  autoFocus
+                />
+                {inputSuffix && (
+                  <span className="text-ink-soft shrink-0 self-center text-xs">
+                    {inputSuffix}
+                  </span>
+                )}
                 <Button
-                  key={option.value}
-                  variant="ghost"
                   size="sm"
-                  className="justify-start text-sm"
-                  onClick={() => handleOptionClick(option)}
+                  className="h-8 shrink-0"
+                  onClick={handleInputSubmit}
                 >
-                  {option.label}
+                  Add
                 </Button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleSubmitOnKeyboardEnterEvent}
-                placeholder={inputPlaceholder}
-                className="h-8 text-sm"
-                autoFocus
-              />
-              {inputSuffix && (
-                <span className="text-muted-foreground shrink-0 self-center text-xs">
-                  {inputSuffix}
-                </span>
-              )}
-              <Button
-                size="sm"
-                className="h-8 shrink-0"
-                onClick={handleInputSubmit}
-              >
-                Add
-              </Button>
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 }

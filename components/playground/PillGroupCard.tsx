@@ -65,7 +65,7 @@ export function PillGroupCard({
       }}
       {...listeners}
       {...attributes}
-      className={`min-w-30 flex-none space-y-1 rounded-lg border border-pink-200 bg-pink-50/60 p-2 transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} ${isOver ? "ring-2 ring-pink-400/60" : ""} `}
+      className={`min-w-35 flex-none space-y-1 rounded-[18px] border border-[#FFD2DA] bg-[#FFF1F4] p-2 px-3 transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} ${isOver ? "ring-2 ring-pink-400/60" : ""}`}
     >
       {/* Header: sport · type + zone badge + save button */}
       <div className="flex items-center justify-between gap-2">
@@ -88,7 +88,7 @@ export function PillGroupCard({
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  className="h-4 w-4 text-pink-400 hover:bg-pink-100 hover:text-pink-600"
+                  className="h-4 w-4 text-[#C9818D] hover:bg-[#FFD2DA] hover:text-[#A0616E]"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -132,13 +132,13 @@ export function PillGroupCard({
       </div>
 
       {(fields.distance || fields.pace) && (
-        <div className="text-muted-foreground flex items-center gap-2 text-[11px]">
+        <div className="text-ink-soft flex items-center gap-2 font-mono text-[11px]">
           {fields.distance && <span>{fields.distance} km</span>}
           {fields.pace && <span>{fields.pace} /km</span>}
         </div>
       )}
 
-      <div className="text-[10px] text-pink-400">
+      <div className="text-[10px] text-[#C9818D]">
         {group.pills.length} pill{group.pills.length !== 1 && "s"}
       </div>
     </div>

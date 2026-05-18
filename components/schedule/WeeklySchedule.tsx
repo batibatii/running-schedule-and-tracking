@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
   getWeekStartDate,
@@ -14,12 +13,12 @@ import {
 import { DayOfWeek, Workout } from "@/types/workout";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
+import { StatsStrip } from "./StatsStrip";
 import { DroppableDay } from "./DroppableDay";
 import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
 import { PillGroupCard } from "@/components/playground/PillGroupCard";
-import { PresetSection } from "@/components/playground/PresetSection";
 import { PresetChip } from "@/components/playground/PresetChip";
 import { TrashBin } from "@/components/playground/TrashBin";
 import { usePresets } from "@/hooks/usePresets";
@@ -43,21 +42,14 @@ import {
 } from "@dnd-kit/core";
 
 export function WeeklySchedule() {
-  // Week navigation state (0 = this week, -1 = last week, 1 = next week)
   const [weekOffset, setWeekOffset] = useState(0);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
-  const [offsetHighlightDate, setOffsetHighlightDate] = useState<string | null>(
-    null,
-  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
+      activationConstraint: { distance: 5 },
     }),
   );
 
@@ -91,7 +83,6 @@ export function WeeklySchedule() {
 
   const { presets, addPreset, removePreset } = usePresets();
 
-  // Unified DnD manager
   const {
     activeId,
     activeDragType,
@@ -153,7 +144,6 @@ export function WeeklySchedule() {
     refreshWorkouts();
   };
 
-  // Week navigation
   const daysOfWeek: DayOfWeek[] = [
     "monday",
     "tuesday",
@@ -164,29 +154,8 @@ export function WeeklySchedule() {
     "sunday",
   ];
 
-  const handlePreviousWeek = () => {
-    setWeekOffset((prev) => prev - 1);
-  };
+  const displayWorkouts = getDisplayWorkouts();
 
-  const handleNextWeek = () => {
-    setWeekOffset((prev) => prev + 1);
-  };
-
-  const handleToday = () => {
-    setWeekOffset(0);
-  };
-
-  const handleDayClick = (date: Date) => {
-    const dateISO = formatDateToISO(date);
-
-    if (offsetHighlightDate === dateISO) {
-      setOffsetHighlightDate(null);
-    } else {
-      setOffsetHighlightDate(dateISO);
-    }
-  };
-
-  // Build the DragOverlay content based on what's being dragged
   const renderDragOverlay = () => {
     if (!activeId) return null;
 
@@ -201,11 +170,15 @@ export function WeeklySchedule() {
     }
 
     if (activeDragType === "preset") {
-      const preset = presets.find((p) => `preset-${p.id}` === activeId);
+      const preset = presets.find(
+        (presetItem) => `preset-${presetItem.id}` === activeId,
+      );
       if (preset) return <PresetChip preset={preset} isOverlay />;
     }
 
-    const workout = getDisplayWorkouts().find((w) => w.id === activeId);
+    const workout = displayWorkouts.find(
+      (workoutItem) => workoutItem.id === activeId,
+    );
     if (workout) {
       return (
         <div style={{ cursor: "grabbing" }}>
@@ -215,8 +188,7 @@ export function WeeklySchedule() {
             heartRateZone={workout.heartRateZone}
             distance={workout.distance ?? 0}
             duration={workout.duration}
-            title={workout.title}
-            notes={workout.notes}
+            completed={workout.completed}
           />
         </div>
       );
@@ -233,12 +205,58 @@ export function WeeklySchedule() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="space-y-4">
+      <div className="mt-7 space-y-4">
+        {/* V1 Header */}
+        <header className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display m-0 text-[44px] leading-[1.05] font-normal tracking-tight">
+              This week&apos;s <em className="text-coral-deep">training</em>
+            </h1>
+            <p className="text-ink-soft mt-1.5 text-sm">
+              Plan, drag and drop your weekly mix. Strava syncs every morning.
+            </p>
+          </div>
+
+          {/* Week navigation */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setWeekOffset((prev) => prev - 1)}
+              className="border-line bg-surface hover:bg-bg-soft rounded-full transition-shadow hover:shadow-[inset_0_0_0_4px_white] active:scale-105"
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setWeekOffset(0)}
+              className="border-line bg-surface hover:bg-bg-soft rounded-full px-4 text-[13px] hover:shadow-lg active:translate-y-0.5 active:shadow-[inset_0_0_0_3px_white]"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setWeekOffset((prev) => prev + 1)}
+              className="border-line bg-surface hover:bg-bg-soft rounded-full transition-shadow hover:shadow-[inset_0_0_0_4px_white] active:scale-105"
+              aria-label="Next week"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-ink-soft ml-3 font-mono text-[13px]">
+              {formatDateDisplay(weekDates[0])} &mdash;{" "}
+              {formatDateDisplay(weekDates[6])}
+            </span>
+          </div>
+        </header>
+
+        {/* Pending changes bar */}
         {pendingChanges.size > 0 && (
-          <div className="bg-muted flex items-center justify-end gap-2 rounded-md p-3">
-            <span className="text-muted-foreground mr-auto text-sm">
-              {pendingChanges.size} workout{pendingChanges.size > 1 ? "s" : ""}{" "}
-              moved
+          <div className="border-line bg-surface flex items-center justify-end gap-2 rounded-[18px] border p-3">
+            <span className="text-ink-soft mr-auto text-sm">
+              {pendingChanges.size} workout
+              {pendingChanges.size > 1 ? "s" : ""} moved
             </span>
             <Button variant="outline" onClick={cancelPendingChanges}>
               Cancel
@@ -246,139 +264,106 @@ export function WeeklySchedule() {
             <Button onClick={savePendingChanges}>Save Changes</Button>
           </div>
         )}
-        {/* Week Navigation Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handlePreviousWeek}
-              aria-label="Previous week"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleNextWeek}
-              aria-label="Next week"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Stats strip */}
+        <StatsStrip workouts={displayWorkouts} />
 
-            <Button variant="outline" onClick={handleToday}>
-              Today
-            </Button>
-          </div>
-
-          <div className="text-lg font-semibold">
-            {formatDateDisplay(weekDates[0])} -{" "}
-            {formatDateDisplay(weekDates[6])}
-          </div>
-        </div>
-
-        {/* Weekly Schedule Grid */}
-        <div className="grid max-w-385 grid-cols-7 items-start gap-2">
+        {/* 7-day grid */}
+        <div className="grid grid-cols-7 items-start gap-2.5">
           {daysOfWeek.map((day, index) => {
             const date = weekDates[index];
             const isToday =
               formatDateToISO(date) === formatDateToISO(new Date());
-            const isOffsetHighlighted =
-              offsetHighlightDate === formatDateToISO(date);
+            const dayWorkouts = displayWorkouts.filter(
+              (workout) =>
+                workout.dayOfWeek === day &&
+                workout.weekStartDate === weekStartDateISO,
+            );
 
             return (
-              <Card
+              <div
                 key={day}
-                className={`flex min-h-60 cursor-pointer flex-col transition-colors ${isToday ? "ring-primary ring-2" : isOffsetHighlighted ? "ring-primary/50 ring-2" : ""}`}
+                className={`bg-surface flex min-h-50 flex-col gap-2.5 rounded-[18px] border p-3 ${
+                  isToday ? "border-coral-deep border-[1.5px]" : "border-line"
+                }`}
               >
-                {/* Day Header */}
-                <div
-                  className="shrink-0 border-b p-3"
-                  onClick={() => handleDayClick(date)}
-                >
-                  <div className="text-sm font-semibold">{getDayName(day)}</div>
-                  <div
-                    className={`text-xs ${
-                      isToday
-                        ? "text-primary font-bold"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {formatDateDisplay(date)}
-                  </div>
-                </div>
-
-                {/* Workouts Container */}
-                <div className="flex flex-1 flex-col">
-                  <div className="max-h-66 overflow-y-auto">
-                    <DroppableDay day={day}>
-                      <div className="flex-1 space-y-2 px-2 py-4">
-                        {(() => {
-                          const dayWorkouts = getDisplayWorkouts().filter(
-                            (w) =>
-                              w.dayOfWeek === day &&
-                              w.weekStartDate ===
-                                formatDateToISO(weekStartDate),
-                          );
-                          return dayWorkouts.length > 0 ? (
-                            dayWorkouts.map((workout) => (
-                              <DroppableWorkoutCard
-                                key={workout.id}
-                                id={workout.id}
-                              >
-                                <WorkoutCard
-                                  sport={workout.sport}
-                                  workoutType={workout.workoutType}
-                                  heartRateZone={workout.heartRateZone}
-                                  distance={workout.distance ?? 0}
-                                  duration={workout.duration}
-                                  title={workout.title}
-                                  notes={workout.notes}
-                                  onClick={() => handleOpenDialog(day, workout)}
-                                />
-                              </DroppableWorkoutCard>
-                            ))
-                          ) : (
-                            <div className="text-muted-foreground py-8 text-center text-xs">
-                              No workouts
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </DroppableDay>
-                  </div>
-
-                  <div className="p-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleOpenDialog(day)}
+                {/* Day header */}
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div
+                      className={`text-[13px] font-semibold tracking-[0.02em] uppercase ${
+                        isToday ? "text-coral-deep" : "text-foreground"
+                      }`}
                     >
-                      <Plus className="mr-1 h-4 w-4" />
-                      Add
-                    </Button>
+                      {getDayName(day).slice(0, 3)}
+                    </div>
+                    <div className="text-ink-faint mt-0.5 font-mono text-[11px]">
+                      {formatDateDisplay(date)}
+                    </div>
                   </div>
+                  {isToday && (
+                    <span className="font-display text-coral-deep text-[13px] italic">
+                      today
+                    </span>
+                  )}
                 </div>
-              </Card>
+
+                {/* Workouts */}
+                <div className="flex max-h-56 flex-1 flex-col overflow-y-auto">
+                  <DroppableDay day={day}>
+                    <div className="flex flex-1 flex-col gap-2">
+                      {dayWorkouts.length > 0 ? (
+                        dayWorkouts.map((workout) => (
+                          <DroppableWorkoutCard
+                            key={workout.id}
+                            id={workout.id}
+                          >
+                            <WorkoutCard
+                              sport={workout.sport}
+                              workoutType={workout.workoutType}
+                              heartRateZone={workout.heartRateZone}
+                              distance={workout.distance ?? 0}
+                              duration={workout.duration}
+                              completed={workout.completed}
+                              onClick={() => handleOpenDialog(day, workout)}
+                            />
+                          </DroppableWorkoutCard>
+                        ))
+                      ) : (
+                        <div className="border-line-strong text-ink-faint flex min-h-15 flex-1 items-center justify-center rounded-2xl border border-dashed text-[11px]">
+                          Drop here
+                        </div>
+                      )}
+                    </div>
+                  </DroppableDay>
+                </div>
+
+                {/* Add workout button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenDialog(day)}
+                  className="border-line bg-bg-soft hover:bg-bg-soft rounded-full px-2.5 text-xs transition-transform hover:scale-105"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add workout
+                </Button>
+              </div>
             );
           })}
         </div>
 
-        <div className="max-w-385">
-          <PlaygroundArea
-            items={items}
-            onAddPill={addPill}
-            isDragActive={activeId !== null}
-            activeId={activeId}
-            activeDragType={activeDragType}
-            onSaveAsPreset={addPreset}
-          />
-          <div className="mt-2">
-            <PresetSection presets={presets} onDeletePreset={removePreset} />
-          </div>
-        </div>
+        {/* Playground + Presets */}
+        <PlaygroundArea
+          items={items}
+          onAddPill={addPill}
+          isDragActive={activeId !== null}
+          activeId={activeId}
+          activeDragType={activeDragType}
+          onSaveAsPreset={addPreset}
+          presets={presets}
+          onDeletePreset={removePreset}
+        />
 
         <AddWorkoutDialog
           open={isDialogOpen}

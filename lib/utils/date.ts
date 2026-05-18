@@ -64,3 +64,12 @@ export function getDayName(dayOfWeek: DayOfWeek): string {
   };
   return names[dayOfWeek];
 }
+
+/** Format total minutes into a compact string like "1h 30m", "45m", or "2h" */
+export function formatDuration(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.round(totalMinutes % 60);
+  if (hours && minutes) return `${hours}h ${minutes}m`;
+  if (hours) return `${hours}h`;
+  return `${minutes}m`;
+}

@@ -2,6 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { Preset } from "@/types/playground";
+import { SportIcon } from "@/components/icons/SportIcon";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
@@ -21,13 +22,23 @@ export function PresetChip({
     data: { type: "preset", preset },
   });
 
+  const workoutType = preset.fields.workoutType ?? "easy";
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"} `}
+      className={`border-line bg-bg-soft inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.25 text-xs font-medium transition-all select-none ${isDragging && !isOverlay ? "opacity-40" : ""} ${isOverlay ? "cursor-grabbing shadow-lg" : "cursor-grab hover:shadow-sm"}`}
     >
+      <span
+        className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: `var(--workout-${workoutType})`,
+        }}
+      >
+        <SportIcon sport={preset.fields.sport ?? "running"} size={10} />
+      </span>
       <span>{preset.label}</span>
       {onDelete && (
         <Button
@@ -37,7 +48,7 @@ export function PresetChip({
             e.stopPropagation();
             onDelete(preset.id);
           }}
-          className="ml-0.5 h-4 w-4 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
+          className="text-ink-faint hover:bg-bg-soft hover:text-foreground ml-0.5 h-4 w-4"
           aria-label="Delete preset"
         >
           <X className="size-3" />

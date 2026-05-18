@@ -1,45 +1,13 @@
 "use client";
 
 import { WeeklySchedule } from "@/components/schedule/WeeklySchedule";
-import PillNav from "@/components/PillNav";
-import { signOut } from "next-auth/react";
+import { TopBar } from "@/components/schedule/TopBar";
 
 export default function Schedule() {
   return (
-    <>
-      {" "}
-      <div className="flex w-full justify-end">
-        {" "}
-        <PillNav
-          logo="/running-man-icon.svg"
-          logoAlt="Running Schedule Logo"
-          items={[
-            { label: "Schedule", href: "/schedule" },
-            { label: "Metrics", href: "/workouts" },
-            { label: "Profile", href: "/settings" },
-            {
-              label: "Logout",
-              href: "#",
-              onClick: () => signOut({ callbackUrl: "/" }),
-            },
-          ]}
-          activeHref="/schedule"
-          baseColor="#f97316"
-          pillColor="#ffffff"
-          hoveredPillTextColor="#ffffff"
-          pillTextColor="#000000"
-          initialLoadAnimation
-        />
-      </div>
-      <main className="container mx-auto py-12">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Training Schedule</h1>
-          <p className="text-muted-foreground mt-2">
-            Plan your weekly running workouts
-          </p>
-        </div>
-        <WeeklySchedule />
-      </main>
-    </>
+    <div className="mx-auto max-w-4/6 px-8 py-8">
+      <TopBar />
+      <WeeklySchedule />
+    </div>
   );
 }
