@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Instrument_Serif } from "next/font/google";
-// @ts-expect-error Missing CSS module declarations for side-effect import
 import "./globals.css";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { Toaster } from "sonner";
