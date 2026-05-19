@@ -23,12 +23,13 @@ interface GeneratorSectionProps {
     fieldType: PillFieldType,
     value: string | number,
     label: string,
-  ) => void;
+  ) => boolean;
   options?: GeneratorOption[];
   inputType?: "number" | "pace";
   inputPlaceholder?: string;
   inputSuffix?: string;
   align?: "left" | "right";
+  atCapacity?: boolean;
 }
 
 export function GeneratorSection({
@@ -40,6 +41,7 @@ export function GeneratorSection({
   inputPlaceholder,
   inputSuffix,
   align = "left",
+  atCapacity = false,
 }: GeneratorSectionProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -93,6 +95,12 @@ export function GeneratorSection({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-48 p-2" align="start">
+            {atCapacity && (
+              <p className="text-ink-faint mb-2 text-[10px] leading-snug">
+                Playground full — drag items to your schedule or trash to free
+                space
+              </p>
+            )}
             {options ? (
               <div className="flex flex-col gap-1">
                 {options.map((option) => (
@@ -101,6 +109,7 @@ export function GeneratorSection({
                     variant="ghost"
                     size="sm"
                     className="justify-start text-sm"
+                    disabled={atCapacity}
                     onClick={() => handleOptionClick(option)}
                   >
                     {option.label}
@@ -115,6 +124,7 @@ export function GeneratorSection({
                   onKeyDown={handleSubmitOnKeyboardEnterEvent}
                   placeholder={inputPlaceholder}
                   className="h-8 text-sm"
+                  disabled={atCapacity}
                   autoFocus
                 />
                 {inputSuffix && (
@@ -125,6 +135,7 @@ export function GeneratorSection({
                 <Button
                   size="sm"
                   className="h-8 shrink-0"
+                  disabled={atCapacity}
                   onClick={handleInputSubmit}
                 >
                   Add

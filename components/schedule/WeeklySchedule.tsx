@@ -71,6 +71,7 @@ export function WeeklySchedule() {
     items,
     pills,
     groups,
+    remainingSlots,
     addPill,
     addExistingPill,
     removePill,
@@ -105,6 +106,7 @@ export function WeeklySchedule() {
     removeItem,
     resolvePillToFields,
     getWorkoutDefaults,
+    remainingSlots,
     removePreset,
     restorePreset,
     refreshWorkouts,
@@ -361,6 +363,7 @@ export function WeeklySchedule() {
           isDragActive={activeId !== null}
           activeId={activeId}
           activeDragType={activeDragType}
+          remainingSlots={remainingSlots}
           onSaveAsPreset={addPreset}
           presets={presets}
         />

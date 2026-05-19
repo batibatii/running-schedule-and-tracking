@@ -52,6 +52,7 @@ interface UseDragDropManagerProps {
     distance?: number;
     pace?: string;
   };
+  remainingSlots: number;
   removePreset: (id: string) => void;
   restorePreset: (preset: Preset) => void;
   refreshWorkouts: () => void;
@@ -119,6 +120,7 @@ export function useDragDropManager({
   removeItem,
   resolvePillToFields,
   getWorkoutDefaults,
+  remainingSlots,
   removePreset,
   restorePreset,
   refreshWorkouts,
@@ -369,6 +371,9 @@ export function useDragDropManager({
         const draggedGroup = active.data.current?.group as PillGroup;
         const targetGroup = over.data.current?.group as PillGroup;
 
+        // Dropped on itself — no-op
+        if (draggedGroup.id === targetGroup.id) return;
+
         const draggedSport = draggedGroup.fields.sport ?? "running";
         const targetSport = targetGroup.fields.sport ?? "running";
 
@@ -472,14 +477,26 @@ export function useDragDropManager({
 
         if (!workout) return;
 
+        const decomposedPills = workoutToPills(workout);
+
+        // Guard: block decompose if pills would exceed capacity
+        if (decomposedPills.length > remainingSlots) {
+          const shortage = decomposedPills.length - remainingSlots;
+          toast.warning(
+            `Not enough room — clear ${shortage} item${shortage !== 1 ? "s" : ""} first`,
+            {
+              description: `Decomposing this workout creates ${decomposedPills.length} pills`,
+            },
+          );
+          return;
+        }
+
         // Clear any pending day changes for this workout
         setPendingChanges((prev) => {
           const next = new Map(prev);
           next.delete(workoutId);
           return next;
         });
-
-        const decomposedPills = workoutToPills(workout);
 
         try {
           await deleteWorkoutAction(workoutId);
@@ -679,6 +696,7 @@ export function useDragDropManager({
       removeItem,
       resolvePillToFields,
       getWorkoutDefaults,
+      remainingSlots,
       removePreset,
       restorePreset,
       refreshWorkouts,

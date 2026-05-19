@@ -1,7 +1,7 @@
 "use client";
 
 import { WorkoutType, HeartRateZone, Sport } from "@/types/workout";
-import { formatDuration } from "@/lib/utils/pace";
+import { formatDurationClock } from "@/lib/utils/pace";
 import {
   getSportLabel,
   getWorkoutTypeLabel,
@@ -9,6 +9,7 @@ import {
   getZoneColor,
 } from "@/lib/utils/workoutLabels";
 import { SportIcon } from "@/components/icons/SportIcon";
+import { WORKOUT_TYPE_ICON_BACKGROUND } from "@/lib/constants/ui";
 
 interface WorkoutCardProps {
   sport: Sport;
@@ -21,15 +22,6 @@ interface WorkoutCardProps {
   completed?: boolean;
   onClick?: () => void;
 }
-
-const WORKOUT_TYPE_ICON_BACKGROUND: Record<WorkoutType, string> = {
-  easy: "bg-workout-easy",
-  tempo: "bg-workout-tempo",
-  long: "bg-workout-long",
-  recovery: "bg-workout-recovery",
-  race: "bg-workout-race",
-  interval: "bg-workout-interval",
-};
 
 export function WorkoutCard({
   sport,
@@ -87,7 +79,7 @@ export function WorkoutCard({
       <div className="text-ink-soft flex items-center gap-2.5 font-mono text-xs">
         {distance > 0 && <span>{distance} km</span>}
         {duration != null && duration > 0 && (
-          <span>{formatDuration(duration)}</span>
+          <span>{formatDurationClock(duration)}</span>
         )}
         <span
           className={`ml-auto rounded-full px-1.75 py-px text-[10px] font-semibold ${getZoneColor(heartRateZone)}`}

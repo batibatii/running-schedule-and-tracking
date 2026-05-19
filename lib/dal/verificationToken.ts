@@ -2,13 +2,14 @@ import { db } from "@/lib/db";
 import { verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { generateVerificationToken } from "@/lib/utils/token";
+import { TOKEN_EXPIRY_24H_MS } from "@/lib/constants/timing";
 
 export async function createVerificationToken(email: string) {
   await db
     .delete(verificationTokens)
     .where(eq(verificationTokens.identifier, email));
   const token = generateVerificationToken();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const expires = new Date(Date.now() + TOKEN_EXPIRY_24H_MS);
 
   await db
     .insert(verificationTokens)

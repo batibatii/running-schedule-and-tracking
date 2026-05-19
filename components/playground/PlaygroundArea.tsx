@@ -14,6 +14,13 @@ import {
   getSportDisplayName,
   WORKOUT_TYPE_LABELS,
 } from "@/lib/utils/workoutLabels";
+import {
+  PLAYGROUND_CAPACITY,
+  CAPACITY_WARNING_THRESHOLD,
+  CAPACITY_CRITICAL_THRESHOLD,
+  CAPACITY_COLOR_AMBER_WARNING,
+  CAPACITY_COLOR_CORAL_CRITICAL,
+} from "@/lib/constants/playground";
 import { Preset } from "@/types/playground";
 import { GeneratorSection } from "./GeneratorSection";
 import { PillChip } from "./PillChip";
@@ -84,16 +91,25 @@ function RotatingTip() {
   );
 }
 
+function getDropZoneBorderColor(capacityFraction: number): string {
+  if (capacityFraction >= CAPACITY_CRITICAL_THRESHOLD)
+    return CAPACITY_COLOR_CORAL_CRITICAL;
+  if (capacityFraction >= CAPACITY_WARNING_THRESHOLD)
+    return CAPACITY_COLOR_AMBER_WARNING;
+  return ""; // default — let Tailwind border-line-strong handle it
+}
+
 interface PlaygroundAreaProps {
   items: PlaygroundItem[];
   onAddPill: (
     fieldType: PillFieldType,
     value: string | number,
     label: string,
-  ) => void;
+  ) => boolean;
   isDragActive: boolean;
   activeId: string | null;
   activeDragType: DragItemType | null;
+  remainingSlots: number;
   onSaveAsPreset?: (label: string, fields: PartialWorkoutFields) => void;
   presets?: Preset[];
 }
@@ -104,6 +120,7 @@ export function PlaygroundArea({
   isDragActive,
   activeId,
   activeDragType,
+  remainingSlots,
   onSaveAsPreset,
   presets,
 }: PlaygroundAreaProps) {
@@ -111,6 +128,10 @@ export function PlaygroundArea({
     id: "playground-drop",
     data: { type: "playground" },
   });
+
+  const capacityFraction = items.length / PLAYGROUND_CAPACITY;
+  const atCapacity = remainingSlots <= 0;
+  const dropZoneBorderColor = getDropZoneBorderColor(capacityFraction);
 
   return (
     <section
@@ -136,6 +157,7 @@ export function PlaygroundArea({
           onAddPill={onAddPill}
           options={SPORT_OPTIONS}
           align="left"
+          atCapacity={atCapacity}
         />
         <GeneratorSection
           title="Effort"
@@ -144,30 +166,54 @@ export function PlaygroundArea({
           inputType="pace"
           inputPlaceholder="5:30"
           align="right"
+          atCapacity={atCapacity}
         />
       </div>
 
       {/* Center drop zone */}
-      <div className="border-line-strong my-3.5 flex min-h-20 flex-wrap items-center gap-2 rounded-[18px] border border-dashed p-4">
-        {items.length === 0 && !isDragActive && (
-          <span className="text-ink-faint mx-auto text-xs">
+      <div
+        className="border-line-strong my-3.5 flex min-h-20 flex-wrap items-start gap-2 rounded-[18px] border border-dashed p-4 transition-colors duration-300"
+        style={
+          dropZoneBorderColor ? { borderColor: dropZoneBorderColor } : undefined
+        }
+      >
+        {items.length === 0 && !isDragActive ? (
+          <span className="text-ink-faint mx-auto self-center text-xs">
             Create items using the + buttons, then drag them to your schedule
           </span>
-        )}
-        {items.map((item) =>
-          item.kind === "pill" ? (
-            <PillChip
-              key={item.id}
-              pill={item}
-              isMergeTarget={activeDragType === "pill" && activeId !== item.id}
-            />
-          ) : (
-            <PillGroupCard
-              key={item.id}
-              group={item}
-              onSaveAsPreset={onSaveAsPreset}
-            />
-          ),
+        ) : (
+          <>
+            {items.map((item) =>
+              item.kind === "pill" ? (
+                <PillChip
+                  key={item.id}
+                  pill={item}
+                  isMergeTarget={
+                    activeDragType === "pill" && activeId !== item.id
+                  }
+                />
+              ) : (
+                <PillGroupCard
+                  key={item.id}
+                  group={item}
+                  onSaveAsPreset={onSaveAsPreset}
+                />
+              ),
+            )}
+            {/* Capacity counter */}
+            <span
+              className="text-ink-faint ml-auto self-end font-mono text-[11px]"
+              style={{
+                color: atCapacity
+                  ? CAPACITY_COLOR_CORAL_CRITICAL
+                  : capacityFraction >= CAPACITY_WARNING_THRESHOLD
+                    ? CAPACITY_COLOR_AMBER_WARNING
+                    : undefined,
+              }}
+            >
+              {items.length} / {PLAYGROUND_CAPACITY}
+            </span>
+          </>
         )}
       </div>
 
@@ -179,6 +225,7 @@ export function PlaygroundArea({
           onAddPill={onAddPill}
           options={WORKOUT_TYPE_OPTIONS}
           align="left"
+          atCapacity={atCapacity}
         />
         <GeneratorSection
           title="Distance"
@@ -188,6 +235,7 @@ export function PlaygroundArea({
           inputPlaceholder="10"
           inputSuffix="KM"
           align="right"
+          atCapacity={atCapacity}
         />
       </div>
 
