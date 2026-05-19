@@ -8,6 +8,8 @@ import {
   PartialWorkoutFields,
 } from "@/types/playground";
 import { Sport, WorkoutType, HeartRateZone } from "@/types/workout";
+import { PLAYGROUND_CAPACITY } from "@/lib/constants/playground";
+import { toast } from "sonner";
 
 const WORKOUT_DEFAULTS = {
   sport: "running" as Sport,
@@ -19,6 +21,7 @@ const store = createLocalStorageStore<PlaygroundItem>("playground-items");
 
 export function usePlayground() {
   const items = useLocalStorageStore(store);
+  const remainingSlots = PLAYGROUND_CAPACITY - items.length;
 
   const pills = items.filter((item): item is Pill => item.kind === "pill");
   const groups = items.filter(
@@ -29,7 +32,17 @@ export function usePlayground() {
     fieldType: PillFieldType,
     value: string | number,
     label: string,
-  ) {
+  ): boolean {
+    const current = store.read();
+    if (current.length >= PLAYGROUND_CAPACITY) {
+      toast.warning(
+        `Playground is full (${PLAYGROUND_CAPACITY}/${PLAYGROUND_CAPACITY})`,
+        {
+          description: "Drag items to your schedule or trash to free space",
+        },
+      );
+      return false;
+    }
     const pill: Pill = {
       id: crypto.randomUUID(),
       kind: "pill",
@@ -37,11 +50,23 @@ export function usePlayground() {
       value,
       label,
     };
-    store.write([...store.read(), pill]);
+    store.write([...current, pill]);
+    return true;
   }
 
-  function addExistingPill(pill: Pill) {
-    store.write([...store.read(), pill]);
+  function addExistingPill(pill: Pill): boolean {
+    const current = store.read();
+    if (current.length >= PLAYGROUND_CAPACITY) {
+      toast.warning(
+        `Playground is full (${PLAYGROUND_CAPACITY}/${PLAYGROUND_CAPACITY})`,
+        {
+          description: "Drag items to your schedule or trash to free space",
+        },
+      );
+      return false;
+    }
+    store.write([...current, pill]);
+    return true;
   }
 
   function removePill(id: string) {
@@ -97,6 +122,7 @@ export function usePlayground() {
     items,
     pills,
     groups,
+    remainingSlots,
     addPill,
     addExistingPill,
     removePill,

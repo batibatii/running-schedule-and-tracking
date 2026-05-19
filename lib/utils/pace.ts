@@ -34,7 +34,7 @@ export function minutesToPace(minutes: number): string {
  * Example: 58.3 minutes -> "58:18"
  * Example: 108.3 minutes -> "1:48:18"
  */
-export function formatDuration(minutes: number): string {
+export function formatDurationClock(minutes: number): string {
   const totalSeconds = Math.round(minutes * 60);
 
   const hours = Math.floor(totalSeconds / 3600);

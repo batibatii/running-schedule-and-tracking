@@ -1,5 +1,5 @@
 import { Workout } from "@/types/workout";
-import { formatDuration } from "@/lib/utils/date";
+import { formatDurationCompact } from "@/lib/utils/date";
 
 interface StatsStripProps {
   workouts: Workout[];
@@ -30,7 +30,7 @@ export function StatsStrip({ workouts }: StatsStripProps) {
     },
     {
       label: "Duration",
-      value: formatDuration(totalDuration),
+      value: formatDurationCompact(totalDuration),
       subtitle: "time",
     },
     {

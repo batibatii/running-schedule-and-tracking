@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/password";
+import { SESSION_MAX_AGE_7DAYS_SECONDS } from "@/lib/constants/timing";
 
 export const authOptions: NextAuthOptions = {
   adapter: DrizzleAdapter(db, {
@@ -56,7 +57,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: SESSION_MAX_AGE_7DAYS_SECONDS,
   },
   pages: {
     signIn: "/",

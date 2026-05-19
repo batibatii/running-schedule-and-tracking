@@ -2,7 +2,7 @@ import {
   paceToMinutes,
   calculateDuration,
   minutesToPace,
-  formatDuration,
+  formatDurationClock,
   calculatePaceFromDuration,
 } from "../pace";
 
@@ -84,29 +84,29 @@ describe("pace utilities", () => {
     });
   });
 
-  describe("formatDuration", () => {
+  describe("formatDurationClock", () => {
     it("should format duration under 60 minutes as MM:SS", () => {
-      expect(formatDuration(45)).toBe("45:00");
-      expect(formatDuration(30.5)).toBe("30:30");
-      expect(formatDuration(58.3)).toBe("58:18");
-      expect(formatDuration(23.75)).toBe("23:45");
+      expect(formatDurationClock(45)).toBe("45:00");
+      expect(formatDurationClock(30.5)).toBe("30:30");
+      expect(formatDurationClock(58.3)).toBe("58:18");
+      expect(formatDurationClock(23.75)).toBe("23:45");
     });
 
     it("should format duration 60 minutes or more as H:MM:SS", () => {
-      expect(formatDuration(60)).toBe("1:00:00");
-      expect(formatDuration(72)).toBe("1:12:00");
-      expect(formatDuration(120)).toBe("2:00:00");
-      expect(formatDuration(120.33)).toBe("2:00:20");
+      expect(formatDurationClock(60)).toBe("1:00:00");
+      expect(formatDurationClock(72)).toBe("1:12:00");
+      expect(formatDurationClock(120)).toBe("2:00:00");
+      expect(formatDurationClock(120.33)).toBe("2:00:20");
     });
 
     it("should handle zero duration", () => {
-      expect(formatDuration(0)).toBe("0:00");
+      expect(formatDurationClock(0)).toBe("0:00");
     });
 
     it("should round to nearest second", () => {
       // 72.999 minutes = 4379.94 seconds = 1:12:60 -> should round to 1:13:00
-      expect(formatDuration(72.999)).toBe("1:13:00");
-      expect(formatDuration(58.999)).toBe("59:00");
+      expect(formatDurationClock(72.999)).toBe("1:13:00");
+      expect(formatDurationClock(58.999)).toBe("59:00");
     });
   });
 
