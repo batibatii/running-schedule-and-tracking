@@ -35,7 +35,6 @@ import { PartialWorkoutUpdate } from "@/types/workoutValidation";
 interface UseDragDropManagerProps {
   workouts: Workout[] | null;
   weekStartDateISO: string;
-  removePill: (id: string) => void;
   addPill: (
     fieldType: PillFieldType,
     value: string | number,
@@ -110,10 +109,32 @@ function workoutToPills(workout: Workout): Pill[] {
   return pills;
 }
 
+/** Build a workout creation payload from defaults or existing workout fields. */
+function buildWorkoutPayload(fields: {
+  sport: Sport;
+  workoutType: WorkoutType;
+  heartRateZone: HeartRateZone;
+  distance?: number;
+  pace?: string;
+  duration?: number;
+}) {
+  return {
+    sport: fields.sport,
+    workoutType: fields.workoutType,
+    heartRateZone: fields.heartRateZone,
+    distance: fields.distance ?? 0,
+    pace: fields.pace,
+    duration:
+      fields.duration ??
+      (fields.distance && fields.pace
+        ? calculateDuration(fields.distance, fields.pace)
+        : undefined),
+  };
+}
+
 export function useDragDropManager({
   workouts,
   weekStartDateISO,
-  removePill,
   addPill,
   addExistingPill,
   addGroup,
@@ -158,7 +179,7 @@ export function useDragDropManager({
 
       if (sourceType === "pill" && targetType === "trash") {
         const pill = active.data.current?.pill as Pill;
-        removePill(pill.id);
+        removeItem(pill.id);
         return;
       }
 
@@ -172,20 +193,14 @@ export function useDragDropManager({
         const result = await withToastError(
           () =>
             createWorkoutAction(
-              {
-                sport: defaults.sport,
-                workoutType: defaults.workoutType,
-                heartRateZone: defaults.heartRateZone,
-                distance: defaults.distance ?? 0,
-                pace: defaults.pace,
-              },
+              buildWorkoutPayload(defaults),
               day,
               weekStartDateISO,
             ),
           "Failed to create workout",
         );
         if (!result) return;
-        removePill(pill.id);
+        removeItem(pill.id);
         refreshWorkouts();
         return;
       }
@@ -221,7 +236,7 @@ export function useDragDropManager({
           "Failed to update workout",
         );
         if (!updateResult) return;
-        removePill(pill.id);
+        removeItem(pill.id);
         refreshWorkouts();
 
         if (
@@ -419,20 +434,13 @@ export function useDragDropManager({
         const day = over.data.current?.day as DayOfWeek;
         const defaults = getWorkoutDefaults(group.fields);
 
-        const workoutData = {
-          sport: defaults.sport,
-          workoutType: defaults.workoutType,
-          heartRateZone: defaults.heartRateZone,
-          distance: defaults.distance ?? 0,
-          pace: defaults.pace,
-          duration:
-            defaults.distance && defaults.pace
-              ? calculateDuration(defaults.distance, defaults.pace)
-              : undefined,
-        };
-
         const groupResult = await withToastError(
-          () => createWorkoutAction(workoutData, day, weekStartDateISO),
+          () =>
+            createWorkoutAction(
+              buildWorkoutPayload(defaults),
+              day,
+              weekStartDateISO,
+            ),
           "Failed to create workout",
         );
         if (!groupResult) return;
@@ -517,14 +525,7 @@ export function useDragDropManager({
               const undoResult = await withToastError(
                 () =>
                   createWorkoutAction(
-                    {
-                      sport: workout.sport,
-                      workoutType: workout.workoutType,
-                      heartRateZone: workout.heartRateZone,
-                      distance: workout.distance ?? 0,
-                      duration: workout.duration,
-                      pace: workout.pace,
-                    },
+                    buildWorkoutPayload(workout),
                     workout.dayOfWeek,
                     weekStartDateISO,
                   ),
@@ -570,14 +571,7 @@ export function useDragDropManager({
                 const undoResult = await withToastError(
                   () =>
                     createWorkoutAction(
-                      {
-                        sport: workout.sport,
-                        workoutType: workout.workoutType,
-                        heartRateZone: workout.heartRateZone,
-                        distance: workout.distance ?? 0,
-                        duration: workout.duration,
-                        pace: workout.pace,
-                      },
+                      buildWorkoutPayload(workout),
                       workout.dayOfWeek,
                       weekStartDateISO,
                     ),
@@ -624,20 +618,13 @@ export function useDragDropManager({
         const day = over.data.current?.day as DayOfWeek;
         const defaults = getWorkoutDefaults(preset.fields);
 
-        const presetWorkoutData = {
-          sport: defaults.sport,
-          workoutType: defaults.workoutType,
-          heartRateZone: defaults.heartRateZone,
-          distance: defaults.distance ?? 0,
-          pace: defaults.pace,
-          duration:
-            defaults.distance && defaults.pace
-              ? calculateDuration(defaults.distance, defaults.pace)
-              : undefined,
-        };
-
         const presetResult = await withToastError(
-          () => createWorkoutAction(presetWorkoutData, day, weekStartDateISO),
+          () =>
+            createWorkoutAction(
+              buildWorkoutPayload(defaults),
+              day,
+              weekStartDateISO,
+            ),
           "Failed to create workout from preset",
         );
         if (!presetResult) return;
@@ -691,7 +678,6 @@ export function useDragDropManager({
     [
       workouts,
       weekStartDateISO,
-      removePill,
       addPill,
       addExistingPill,
       addGroup,

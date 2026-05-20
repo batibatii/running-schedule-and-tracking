@@ -35,7 +35,7 @@ export function getSportLabel(sport: Sport): string {
 export function getSportDisplayName(sport: Sport): string {
   const labels: Record<Sport, string> = {
     running: "Run",
-    cycling: "Cycle",
+    cycling: "Bike",
     swimming: "Swim",
   };
   return labels[sport];

@@ -15,11 +15,12 @@ import { ErrorAlert } from "./alert/ErrorAlert";
 import { SuccessAlert } from "./alert/SuccessAlert";
 import { signIn } from "next-auth/react";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signUpAction, resendVerificationAction } from "@/app/actions/auth";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     register,
     handleSubmit,
@@ -42,21 +43,19 @@ export default function LoginForm() {
   } = useAsyncData();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get("error");
-    const verified = params.get("verified");
+    const error = searchParams.get("error");
+    const verified = searchParams.get("verified");
 
     if (error === "verification_expired") {
       setError("Your verification link has expired. Please request a new one.");
     }
 
     if (verified === "true") {
-      // Don't show "Login successful", clear any states
       setSuccess(false);
       setError(undefined);
       window.history.replaceState({}, "", "/");
     }
-  }, [setError, setSuccess]);
+  }, [searchParams, setError, setSuccess]);
 
   const onSubmit = async (data: LoginAndSignUpType) => {
     setNeedVerification(false);

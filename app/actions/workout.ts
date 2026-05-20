@@ -30,10 +30,16 @@ export async function fetchWorkoutsAction(
 
     return workouts.map((w) => ({
       ...w,
+      sport: w.sport as Workout["sport"],
+      workoutType: w.workoutType as Workout["workoutType"],
+      heartRateZone: w.heartRateZone as Workout["heartRateZone"],
+      dayOfWeek: w.dayOfWeek as Workout["dayOfWeek"],
       distance: Number(w.distance) || 0,
       duration: w.duration ? Number(w.duration) : undefined,
-      pace: w.pace || undefined,
-    })) as Workout[];
+      pace: w.pace ?? undefined,
+      title: w.title ?? undefined,
+      notes: w.notes ?? undefined,
+    })) satisfies Workout[];
   } catch (error) {
     console.error("[fetchWorkoutsAction]", extractErrorMessage(error));
     throw error;

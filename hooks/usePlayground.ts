@@ -69,12 +69,19 @@ export function usePlayground() {
     return true;
   }
 
-  function removePill(id: string) {
-    store.write(store.read().filter((item) => item.id !== id));
-  }
-
-  function addGroup(group: PillGroup) {
-    store.write([...store.read(), group]);
+  function addGroup(group: PillGroup): boolean {
+    const current = store.read();
+    if (current.length >= PLAYGROUND_CAPACITY) {
+      toast.warning(
+        `Playground is full (${PLAYGROUND_CAPACITY}/${PLAYGROUND_CAPACITY})`,
+        {
+          description: "Drag items to your schedule or trash to free space",
+        },
+      );
+      return false;
+    }
+    store.write([...current, group]);
+    return true;
   }
 
   function updateGroup(id: string, updates: Partial<PillGroup>) {
@@ -125,7 +132,6 @@ export function usePlayground() {
     remainingSlots,
     addPill,
     addExistingPill,
-    removePill,
     addGroup,
     updateGroup,
     removeItem,

@@ -36,6 +36,8 @@ import {
 import {
   getSportDisplayName,
   WORKOUT_TYPE_LABELS,
+  SPORT_WORKOUT_TYPES,
+  isCompatibleWorkoutType,
 } from "@/lib/utils/workoutLabels";
 import { useEffect, useState } from "react";
 import { calculateDuration, calculatePaceFromDuration } from "@/lib/utils/pace";
@@ -113,6 +115,16 @@ export function AddWorkoutDialog({
   const heartRateZone = watch("heartRateZone");
   const distance = watch("distance");
   const pace = watch("pace");
+
+  useEffect(() => {
+    if (
+      workoutType &&
+      sport &&
+      !isCompatibleWorkoutType(sport as Sport, workoutType as WorkoutType)
+    ) {
+      setValue("workoutType", "");
+    }
+  }, [sport, workoutType, setValue]);
 
   useEffect(() => {
     if (distance && pace && /^\d{1,2}:\d{2}$/.test(pace)) {
@@ -275,11 +287,13 @@ export function AddWorkoutDialog({
                   <SelectValue placeholder="Select workout type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {WORKOUT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {WORKOUT_TYPE_LABELS[type]}
-                    </SelectItem>
-                  ))}
+                  {(SPORT_WORKOUT_TYPES[sport as Sport] ?? WORKOUT_TYPES).map(
+                    (type) => (
+                      <SelectItem key={type} value={type}>
+                        {WORKOUT_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
               {errors.workoutType && (
@@ -386,7 +400,7 @@ export function AddWorkoutDialog({
               <Label htmlFor="notes">Notes (optional)</Label>
               <Textarea
                 id="notes"
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-20"
                 placeholder="Training details, how you felt, etc."
                 {...register("notes")}
               />
