@@ -140,14 +140,18 @@ export function WeeklySchedule() {
   const handleSaveWorkout = async (workout: WorkoutFormData) => {
     const result = await withToastError(async () => {
       if (editingWorkout) {
-        await updateWorkoutAction(
+        return await updateWorkoutAction(
           editingWorkout.id,
           workout,
           selectedDay,
           weekStartDateISO,
         );
       } else {
-        await createWorkoutAction(workout, selectedDay, weekStartDateISO);
+        return await createWorkoutAction(
+          workout,
+          selectedDay,
+          weekStartDateISO,
+        );
       }
     }, "Failed to save workout");
     if (!result) return;
@@ -155,11 +159,11 @@ export function WeeklySchedule() {
   };
 
   const handleDeleteWorkout = async (workoutId: string) => {
-    const result = await withToastError(
-      () => deleteWorkoutAction(workoutId),
-      "Failed to delete workout",
-    );
-    if (result === undefined) return;
+    const result = await withToastError(async () => {
+      await deleteWorkoutAction(workoutId);
+      return true as const;
+    }, "Failed to delete workout");
+    if (!result) return;
     refreshWorkouts();
   };
 

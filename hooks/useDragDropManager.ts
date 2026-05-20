@@ -508,11 +508,11 @@ export function useDragDropManager({
           return next;
         });
 
-        const decomposeResult = await withToastError(
-          () => deleteWorkoutAction(workoutId),
-          "Failed to decompose workout",
-        );
-        if (decomposeResult === undefined) return;
+        const decomposeResult = await withToastError(async () => {
+          await deleteWorkoutAction(workoutId);
+          return true as const;
+        }, "Failed to decompose workout");
+        if (!decomposeResult) return;
         for (const pill of decomposedPills) {
           addExistingPill(pill);
         }
@@ -553,11 +553,11 @@ export function useDragDropManager({
           return next;
         });
 
-        const deleteResult = await withToastError(
-          () => deleteWorkoutAction(workoutId),
-          "Failed to delete workout",
-        );
-        if (deleteResult === undefined) return;
+        const deleteResult = await withToastError(async () => {
+          await deleteWorkoutAction(workoutId);
+          return true as const;
+        }, "Failed to delete workout");
+        if (!deleteResult) return;
         refreshWorkouts();
 
         toast.success(
