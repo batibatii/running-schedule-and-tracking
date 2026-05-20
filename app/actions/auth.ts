@@ -8,7 +8,7 @@ import {
 import { sendVerificationEmail } from "@/lib/email";
 import { ResendVerificationSchema } from "@/types/authValidation";
 import { ActionResult, extractErrorMessage } from "@/lib/utils/error";
-import bcrypt from "bcrypt";
+import { hashPassword } from "@/lib/password";
 
 // Manual try-catch instead of safeAction — auth actions have multiple
 // business-logic return paths (e.g. "User already exists") that need
@@ -26,7 +26,7 @@ export async function signUpAction(
       };
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await hashPassword(password);
 
     await createUser({ email, hashedPassword });
 

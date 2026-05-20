@@ -1,6 +1,16 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+
+function getResend(): Resend {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY environment variable is not set");
+  }
+  _resend = new Resend(key);
+  return _resend;
+}
 
 interface SendVerificationEmailParams {
   email: string;
@@ -14,7 +24,7 @@ export async function sendVerificationEmail({
   const verificationUrl = `${process.env.APP_URL}/api/auth/verify-email?token=${token}`;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.FROM_EMAIL || "onboarding@resend.dev",
       to: email,
       subject: "Verify your email address",

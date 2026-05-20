@@ -32,6 +32,7 @@ import {
   updateWorkoutAction,
   deleteWorkoutAction,
 } from "@/app/actions/workout";
+import { withToastError } from "@/lib/utils/errorClient";
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +41,16 @@ import {
   PointerSensor,
   pointerWithin,
 } from "@dnd-kit/core";
+
+const DAYS_OF_WEEK: DayOfWeek[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
 
 export function WeeklySchedule() {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -74,7 +85,6 @@ export function WeeklySchedule() {
     remainingSlots,
     addPill,
     addExistingPill,
-    removePill,
     addGroup,
     updateGroup,
     removeItem,
@@ -98,7 +108,6 @@ export function WeeklySchedule() {
   } = useDragDropManager({
     workouts,
     weekStartDateISO,
-    removePill,
     addPill,
     addExistingPill,
     addGroup,
@@ -129,33 +138,30 @@ export function WeeklySchedule() {
   };
 
   const handleSaveWorkout = async (workout: WorkoutFormData) => {
-    if (editingWorkout) {
-      await updateWorkoutAction(
-        editingWorkout.id,
-        workout,
-        selectedDay,
-        weekStartDateISO,
-      );
-    } else {
-      await createWorkoutAction(workout, selectedDay, weekStartDateISO);
-    }
+    const result = await withToastError(async () => {
+      if (editingWorkout) {
+        await updateWorkoutAction(
+          editingWorkout.id,
+          workout,
+          selectedDay,
+          weekStartDateISO,
+        );
+      } else {
+        await createWorkoutAction(workout, selectedDay, weekStartDateISO);
+      }
+    }, "Failed to save workout");
+    if (!result) return;
     refreshWorkouts();
   };
 
   const handleDeleteWorkout = async (workoutId: string) => {
-    await deleteWorkoutAction(workoutId);
+    const result = await withToastError(
+      () => deleteWorkoutAction(workoutId),
+      "Failed to delete workout",
+    );
+    if (result === undefined) return;
     refreshWorkouts();
   };
-
-  const daysOfWeek: DayOfWeek[] = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-  ];
 
   const displayWorkouts = getDisplayWorkouts();
 
@@ -273,7 +279,7 @@ export function WeeklySchedule() {
 
         {/* 7-day grid */}
         <div className="grid grid-cols-7 items-start gap-2.5">
-          {daysOfWeek.map((day, index) => {
+          {DAYS_OF_WEEK.map((day, index) => {
             const date = weekDates[index];
             const isToday =
               formatDateToISO(date) === formatDateToISO(new Date());
