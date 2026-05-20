@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import LoginForm from "@/components/LoginForm";
 
 export default function Home() {
   return (
     <main className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      <LoginForm />
+      <Suspense>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }
