@@ -7,18 +7,16 @@ import {
 } from "@/lib/dal/verificationToken";
 import { sendVerificationEmail } from "@/lib/email";
 import { ResendVerificationSchema } from "@/types/authValidation";
+import { ActionResult, extractErrorMessage } from "@/lib/utils/error";
 import bcrypt from "bcrypt";
 
-interface AuthResult {
-  success: boolean;
-  message: string;
-  error?: string;
-}
-
+// Manual try-catch instead of safeAction — auth actions have multiple
+// business-logic return paths (e.g. "User already exists") that need
+// distinct messages, not a single catch-all errorMessage.
 export async function signUpAction(
   email: string,
   password: string,
-): Promise<AuthResult> {
+): Promise<ActionResult> {
   try {
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
@@ -47,18 +45,20 @@ export async function signUpAction(
         "Registration successful! Please check your email to verify your account.",
     };
   } catch (error) {
-    console.error("Sign up error:", error);
+    console.error("Sign up error:", extractErrorMessage(error));
     return {
       success: false,
       message: "Failed to create account",
-      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
 
+// Manual try-catch instead of safeAction — auth actions have multiple
+// business-logic return paths (e.g. "User already exists") that need
+// distinct messages, not a single catch-all errorMessage.
 export async function resendVerificationAction(
   email: string,
-): Promise<AuthResult> {
+): Promise<ActionResult> {
   try {
     const validationResult = ResendVerificationSchema.safeParse({ email });
 
@@ -114,11 +114,10 @@ export async function resendVerificationAction(
       message: "Verification email sent! Check your inbox",
     };
   } catch (error) {
-    console.error("Resend verification error:", error);
+    console.error("Resend verification error:", extractErrorMessage(error));
     return {
       success: false,
       message: "An error occurred while sending verification email",
-      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }

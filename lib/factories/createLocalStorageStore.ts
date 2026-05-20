@@ -34,7 +34,8 @@ export function createLocalStorageStore<T>(key: string): LocalStorageStore<T> {
         cachedItems = raw ? JSON.parse(raw) : [];
       }
       return cachedItems;
-    } catch {
+    } catch (error) {
+      console.warn(`[localStorage] Failed to read "${key}":`, error);
       return cachedItems;
     }
   }

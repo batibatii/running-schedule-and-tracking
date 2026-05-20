@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 interface UseAsyncDataReturn<T> {
   data: T | null;
@@ -28,9 +29,7 @@ export function useAsyncData<T = void>(): UseAsyncDataReturn<T> {
       setData(result);
       setSuccess(true);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      setError(errorMessage);
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }

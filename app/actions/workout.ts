@@ -12,20 +12,32 @@ import {
   WorkoutFormData,
   PartialWorkoutUpdate,
 } from "@/types/workoutValidation";
+import { extractErrorMessage } from "@/lib/utils/error";
+
+// Workout actions use log-and-rethrow instead of safeAction (which returns
+// ActionResult). This is because these actions are consumed by useAsyncData.execute()
+// in WeeklySchedule and AddWorkoutDialog, which expects thrown errors to set its
+// error state. Client-side callers in useDragDropManager wrap these with
+// withToastError() for user-facing error toasts.
 
 export async function fetchWorkoutsAction(
   weekStartDate: string,
 ): Promise<Workout[]> {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const workouts = await getWorkouts(user.id, weekStartDate);
+    const workouts = await getWorkouts(user.id, weekStartDate);
 
-  return workouts.map((w) => ({
-    ...w,
-    distance: Number(w.distance) || 0,
-    duration: w.duration ? Number(w.duration) : undefined,
-    pace: w.pace || undefined,
-  })) as Workout[];
+    return workouts.map((w) => ({
+      ...w,
+      distance: Number(w.distance) || 0,
+      duration: w.duration ? Number(w.duration) : undefined,
+      pace: w.pace || undefined,
+    })) as Workout[];
+  } catch (error) {
+    console.error("[fetchWorkoutsAction]", extractErrorMessage(error));
+    throw error;
+  }
 }
 
 export async function createWorkoutAction(
@@ -33,28 +45,38 @@ export async function createWorkoutAction(
   dayOfWeek: DayOfWeek,
   weekStartDate: string,
 ) {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const workout = await createWorkout(user.id, {
-    ...data,
-    dayOfWeek,
-    weekStartDate,
-  });
+    const workout = await createWorkout(user.id, {
+      ...data,
+      dayOfWeek,
+      weekStartDate,
+    });
 
-  return workout;
+    return workout;
+  } catch (error) {
+    console.error("[createWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
 }
 
 export async function updateWorkoutDayAction(
   workoutId: string,
   newDayOfWeek: DayOfWeek,
 ) {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const updatedWorkout = await updateWorkout(workoutId, user.id, {
-    dayOfWeek: newDayOfWeek,
-  });
+    const updatedWorkout = await updateWorkout(workoutId, user.id, {
+      dayOfWeek: newDayOfWeek,
+    });
 
-  return updatedWorkout;
+    return updatedWorkout;
+  } catch (error) {
+    console.error("[updateWorkoutDayAction]", extractErrorMessage(error));
+    throw error;
+  }
 }
 
 export async function updateWorkoutAction(
@@ -63,28 +85,43 @@ export async function updateWorkoutAction(
   dayOfWeek: DayOfWeek,
   weekStartDate: string,
 ) {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const updatedWorkout = await updateWorkout(workoutId, user.id, {
-    ...data,
-    dayOfWeek,
-    weekStartDate,
-  });
-  return updatedWorkout;
+    const updatedWorkout = await updateWorkout(workoutId, user.id, {
+      ...data,
+      dayOfWeek,
+      weekStartDate,
+    });
+    return updatedWorkout;
+  } catch (error) {
+    console.error("[updateWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
 }
 
 export async function updateWorkoutFieldAction(
   workoutId: string,
   fields: PartialWorkoutUpdate,
 ) {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const updatedWorkout = await updateWorkout(workoutId, user.id, fields);
-  return updatedWorkout;
+    const updatedWorkout = await updateWorkout(workoutId, user.id, fields);
+    return updatedWorkout;
+  } catch (error) {
+    console.error("[updateWorkoutFieldAction]", extractErrorMessage(error));
+    throw error;
+  }
 }
 
 export async function deleteWorkoutAction(workoutId: string) {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  await deleteWorkout(workoutId, user.id);
+    await deleteWorkout(workoutId, user.id);
+  } catch (error) {
+    console.error("[deleteWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
 }

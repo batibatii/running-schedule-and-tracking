@@ -23,6 +23,7 @@ import {
   isCompatibleWorkoutType,
 } from "@/lib/utils/workoutLabels";
 import { toast } from "sonner";
+import { withToastError } from "@/lib/utils/errorClient";
 import {
   createWorkoutAction,
   updateWorkoutDayAction,
@@ -168,23 +169,24 @@ export function useDragDropManager({
         const fields = resolvePillToFields(pill);
         const defaults = getWorkoutDefaults(fields);
 
-        try {
-          await createWorkoutAction(
-            {
-              sport: defaults.sport,
-              workoutType: defaults.workoutType,
-              heartRateZone: defaults.heartRateZone,
-              distance: defaults.distance ?? 0,
-              pace: defaults.pace,
-            },
-            day,
-            weekStartDateISO,
-          );
-          removePill(pill.id);
-          refreshWorkouts();
-        } catch {
-          toast.error("Failed to create workout");
-        }
+        const result = await withToastError(
+          () =>
+            createWorkoutAction(
+              {
+                sport: defaults.sport,
+                workoutType: defaults.workoutType,
+                heartRateZone: defaults.heartRateZone,
+                distance: defaults.distance ?? 0,
+                pace: defaults.pace,
+              },
+              day,
+              weekStartDateISO,
+            ),
+          "Failed to create workout",
+        );
+        if (!result) return;
+        removePill(pill.id);
+        refreshWorkouts();
         return;
       }
 
@@ -214,40 +216,40 @@ export function useDragDropManager({
           );
         }
 
-        try {
-          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
-          removePill(pill.id);
-          refreshWorkouts();
+        const updateResult = await withToastError(
+          () => updateWorkoutFieldAction(targetWorkoutId, updateFields),
+          "Failed to update workout",
+        );
+        if (!updateResult) return;
+        removePill(pill.id);
+        refreshWorkouts();
 
-          if (
-            oldValue !== undefined &&
-            oldValue !== null &&
-            oldValue !== newValue
-          ) {
-            toast.success(`Updated ${fieldKey} to "${newValue}"`, {
-              action: {
-                label: "Undo",
-                onClick: async () => {
-                  try {
-                    const undoFields: PartialWorkoutUpdate = {
-                      [fieldKey]: oldValue,
-                    };
-                    if (updateFields.duration !== undefined) {
-                      undoFields.duration = workout.duration;
-                    }
-                    await updateWorkoutFieldAction(targetWorkoutId, undoFields);
-                    addPill(pill.fieldType, pill.value, pill.label);
-                    refreshWorkouts();
-                  } catch {
-                    toast.error("Failed to undo");
-                  }
-                },
+        if (
+          oldValue !== undefined &&
+          oldValue !== null &&
+          oldValue !== newValue
+        ) {
+          toast.success(`Updated ${fieldKey} to "${newValue}"`, {
+            action: {
+              label: "Undo",
+              onClick: async () => {
+                const undoFields: PartialWorkoutUpdate = {
+                  [fieldKey]: oldValue,
+                };
+                if (updateFields.duration !== undefined) {
+                  undoFields.duration = workout.duration;
+                }
+                const undoResult = await withToastError(
+                  () => updateWorkoutFieldAction(targetWorkoutId, undoFields),
+                  "Failed to undo",
+                );
+                if (!undoResult) return;
+                addPill(pill.fieldType, pill.value, pill.label);
+                refreshWorkouts();
               },
-              duration: 5000,
-            });
-          }
-        } catch {
-          toast.error("Failed to update workout");
+            },
+            duration: 5000,
+          });
         }
         return;
       }
@@ -417,25 +419,25 @@ export function useDragDropManager({
         const day = over.data.current?.day as DayOfWeek;
         const defaults = getWorkoutDefaults(group.fields);
 
-        try {
-          const workoutData = {
-            sport: defaults.sport,
-            workoutType: defaults.workoutType,
-            heartRateZone: defaults.heartRateZone,
-            distance: defaults.distance ?? 0,
-            pace: defaults.pace,
-            duration:
-              defaults.distance && defaults.pace
-                ? calculateDuration(defaults.distance, defaults.pace)
-                : undefined,
-          };
+        const workoutData = {
+          sport: defaults.sport,
+          workoutType: defaults.workoutType,
+          heartRateZone: defaults.heartRateZone,
+          distance: defaults.distance ?? 0,
+          pace: defaults.pace,
+          duration:
+            defaults.distance && defaults.pace
+              ? calculateDuration(defaults.distance, defaults.pace)
+              : undefined,
+        };
 
-          await createWorkoutAction(workoutData, day, weekStartDateISO);
-          removeItem(group.id);
-          refreshWorkouts();
-        } catch {
-          toast.error("Failed to create workout");
-        }
+        const groupResult = await withToastError(
+          () => createWorkoutAction(workoutData, day, weekStartDateISO),
+          "Failed to create workout",
+        );
+        if (!groupResult) return;
+        removeItem(group.id);
+        refreshWorkouts();
         return;
       }
 
@@ -460,13 +462,13 @@ export function useDragDropManager({
           updateFields.duration = calculateDuration(finalDistance, finalPace);
         }
 
-        try {
-          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
-          removeItem(group.id);
-          refreshWorkouts();
-        } catch {
-          toast.error("Failed to update workout");
-        }
+        const mergeResult = await withToastError(
+          () => updateWorkoutFieldAction(targetWorkoutId, updateFields),
+          "Failed to update workout",
+        );
+        if (!mergeResult) return;
+        removeItem(group.id);
+        refreshWorkouts();
         return;
       }
 
@@ -498,19 +500,23 @@ export function useDragDropManager({
           return next;
         });
 
-        try {
-          await deleteWorkoutAction(workoutId);
-          for (const pill of decomposedPills) {
-            addExistingPill(pill);
-          }
-          refreshWorkouts();
+        const decomposeResult = await withToastError(
+          () => deleteWorkoutAction(workoutId),
+          "Failed to decompose workout",
+        );
+        if (decomposeResult === undefined) return;
+        for (const pill of decomposedPills) {
+          addExistingPill(pill);
+        }
+        refreshWorkouts();
 
-          toast.success("Workout decomposed into pills", {
-            action: {
-              label: "Undo",
-              onClick: async () => {
-                try {
-                  await createWorkoutAction(
+        toast.success("Workout decomposed into pills", {
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              const undoResult = await withToastError(
+                () =>
+                  createWorkoutAction(
                     {
                       sport: workout.sport,
                       workoutType: workout.workoutType,
@@ -521,22 +527,18 @@ export function useDragDropManager({
                     },
                     workout.dayOfWeek,
                     weekStartDateISO,
-                  );
-                  // Remove the decomposed pills
-                  for (const pill of decomposedPills) {
-                    removeItem(pill.id);
-                  }
-                  refreshWorkouts();
-                } catch {
-                  toast.error("Failed to undo");
-                }
-              },
+                  ),
+                "Failed to undo",
+              );
+              if (!undoResult) return;
+              for (const pill of decomposedPills) {
+                removeItem(pill.id);
+              }
+              refreshWorkouts();
             },
-            duration: 5000,
-          });
-        } catch {
-          toast.error("Failed to decompose workout");
-        }
+          },
+          duration: 5000,
+        });
         return;
       }
 
@@ -550,20 +552,24 @@ export function useDragDropManager({
           return next;
         });
 
-        try {
-          await deleteWorkoutAction(workoutId);
-          refreshWorkouts();
+        const deleteResult = await withToastError(
+          () => deleteWorkoutAction(workoutId),
+          "Failed to delete workout",
+        );
+        if (deleteResult === undefined) return;
+        refreshWorkouts();
 
-          toast.success(
-            `"${workout?.title || workout?.workoutType || "Workout"}" deleted`,
-            {
-              description: "You can undo this action",
-              action: {
-                label: "Undo",
-                onClick: async () => {
-                  if (!workout) return;
-                  try {
-                    await createWorkoutAction(
+        toast.success(
+          `"${workout?.title || workout?.workoutType || "Workout"}" deleted`,
+          {
+            description: "You can undo this action",
+            action: {
+              label: "Undo",
+              onClick: async () => {
+                if (!workout) return;
+                const undoResult = await withToastError(
+                  () =>
+                    createWorkoutAction(
                       {
                         sport: workout.sport,
                         workoutType: workout.workoutType,
@@ -574,19 +580,16 @@ export function useDragDropManager({
                       },
                       workout.dayOfWeek,
                       weekStartDateISO,
-                    );
-                    refreshWorkouts();
-                  } catch {
-                    toast.error("Failed to undo deletion");
-                  }
-                },
+                    ),
+                  "Failed to undo deletion",
+                );
+                if (!undoResult) return;
+                refreshWorkouts();
               },
-              duration: 5000,
             },
-          );
-        } catch {
-          toast.error("Failed to delete workout");
-        }
+            duration: 5000,
+          },
+        );
         return;
       }
 
@@ -621,24 +624,24 @@ export function useDragDropManager({
         const day = over.data.current?.day as DayOfWeek;
         const defaults = getWorkoutDefaults(preset.fields);
 
-        try {
-          const workoutData = {
-            sport: defaults.sport,
-            workoutType: defaults.workoutType,
-            heartRateZone: defaults.heartRateZone,
-            distance: defaults.distance ?? 0,
-            pace: defaults.pace,
-            duration:
-              defaults.distance && defaults.pace
-                ? calculateDuration(defaults.distance, defaults.pace)
-                : undefined,
-          };
+        const presetWorkoutData = {
+          sport: defaults.sport,
+          workoutType: defaults.workoutType,
+          heartRateZone: defaults.heartRateZone,
+          distance: defaults.distance ?? 0,
+          pace: defaults.pace,
+          duration:
+            defaults.distance && defaults.pace
+              ? calculateDuration(defaults.distance, defaults.pace)
+              : undefined,
+        };
 
-          await createWorkoutAction(workoutData, day, weekStartDateISO);
-          refreshWorkouts();
-        } catch {
-          toast.error("Failed to create workout from preset");
-        }
+        const presetResult = await withToastError(
+          () => createWorkoutAction(presetWorkoutData, day, weekStartDateISO),
+          "Failed to create workout from preset",
+        );
+        if (!presetResult) return;
+        refreshWorkouts();
         return;
       }
 
@@ -662,12 +665,12 @@ export function useDragDropManager({
           updateFields.duration = calculateDuration(finalDistance, finalPace);
         }
 
-        try {
-          await updateWorkoutFieldAction(targetWorkoutId, updateFields);
-          refreshWorkouts();
-        } catch {
-          toast.error("Failed to apply preset to workout");
-        }
+        const applyResult = await withToastError(
+          () => updateWorkoutFieldAction(targetWorkoutId, updateFields),
+          "Failed to apply preset to workout",
+        );
+        if (!applyResult) return;
+        refreshWorkouts();
         return;
       }
 
@@ -704,10 +707,17 @@ export function useDragDropManager({
   );
 
   const savePendingChanges = useCallback(async () => {
-    const promises = Array.from(pendingChanges.entries()).map(
-      ([workoutId, newDay]) => updateWorkoutDayAction(workoutId, newDay),
+    const entries = Array.from(pendingChanges.entries());
+    const results = await withToastError(
+      () =>
+        Promise.all(
+          entries.map(([workoutId, newDay]) =>
+            updateWorkoutDayAction(workoutId, newDay),
+          ),
+        ),
+      `Failed to save ${entries.length} pending changes`,
     );
-    await Promise.all(promises);
+    if (!results) return;
     setPendingChanges(new Map());
     refreshWorkouts();
   }, [pendingChanges, refreshWorkouts]);
