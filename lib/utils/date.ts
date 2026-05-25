@@ -65,6 +65,11 @@ export function getDayName(dayOfWeek: DayOfWeek): string {
   return names[dayOfWeek];
 }
 
+/** Return a Unix timestamp (seconds) for N days ago. */
+export function daysAgoTimestamp(days: number): number {
+  return Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
+}
+
 /** Format total minutes into a compact string like "1h 30m", "45m", or "2h" */
 export function formatDurationCompact(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);

@@ -60,3 +60,17 @@ export function calculatePaceFromDuration(distance: number, duration: number) {
 
   return minutesToPace(pacePerKm);
 }
+
+/** Convert meters to kilometers, rounded to 2 decimal places. */
+export function metersToKm(meters: number): number {
+  return Math.round((meters / 1000) * 100) / 100;
+}
+
+export function calculatePaceDecimal(
+  distanceKm: number,
+  durationSeconds: number,
+): number | null {
+  if (distanceKm <= 0) return null;
+  const paceMinPerKm = durationSeconds / 60 / distanceKm;
+  return Math.round(paceMinPerKm * 100) / 100;
+}
