@@ -8,6 +8,7 @@ declare module "next-auth" {
     user: {
       id: string;
       emailVerified?: Date | null;
+      stravaConnected?: boolean;
     } & DefaultSession["user"];
   }
 }

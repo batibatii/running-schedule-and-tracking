@@ -238,10 +238,7 @@ export default function LoginForm() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => {
-              // TODO: Add Strava OAuth login logic here
-              console.log("Strava login clicked");
-            }}
+            onClick={() => signIn("strava", { callbackUrl: "/schedule" })}
           >
             <StravaIcon className="h-5 w-5" />
             Continue with Strava

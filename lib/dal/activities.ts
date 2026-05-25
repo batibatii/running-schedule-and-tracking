@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { NewActivity } from "@/lib/db/schema";
 
 export async function getActivitiesByUserId(userId: string) {
