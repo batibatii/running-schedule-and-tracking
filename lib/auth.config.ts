@@ -82,6 +82,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/",
+    error: "/", // Redirect OAuth errors (e.g. user cancelled) to login page
   },
   callbacks: {
     async jwt({ token, user, account, trigger }) {
