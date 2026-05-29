@@ -11,7 +11,7 @@ const stravaWebhookEventSchema = z.object({
   object_type: z.enum(["activity", "athlete"]),
   owner_id: z.number(),
   subscription_id: z.number(),
-  updates: z.record(z.string()).default({}),
+  updates: z.record(z.string(), z.string()).default({}),
 });
 
 /**
