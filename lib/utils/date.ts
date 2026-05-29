@@ -65,9 +65,12 @@ export function getDayName(dayOfWeek: DayOfWeek): string {
   return names[dayOfWeek];
 }
 
-/** Return a Unix timestamp (seconds) for N days ago. */
+/** Return a Unix timestamp (seconds) for UTC midnight N days ago. */
 export function daysAgoTimestamp(days: number): number {
-  return Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - days);
+  return Math.floor(d.getTime() / 1000);
 }
 
 /** Format total minutes into a compact string like "1h 30m", "45m", or "2h" */

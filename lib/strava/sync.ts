@@ -46,7 +46,9 @@ function mapStravaActivityToNewActivity(
     averageHeartRate: activity.average_heartrate
       ? Math.round(activity.average_heartrate)
       : null,
-    maxHeartRate: activity.max_heartrate ?? null,
+    maxHeartRate: activity.max_heartrate
+      ? Math.round(activity.max_heartrate)
+      : null,
     activityDate: new Date(activity.start_date),
     isCompleted: true,
     stravaActivityId: String(activity.id),
@@ -72,31 +74,44 @@ export async function syncRecentActivities(
   days: number = 30,
 ): Promise<{ synced: number; errors: number }> {
   const after = daysAgoTimestamp(days);
-  const summaries = await listStravaActivities(userId, {
-    after,
-    perPage: 200,
-  });
+  const PER_PAGE = 200;
 
   let synced = 0;
   let errors = 0;
+  let page = 1;
 
-  for (const summary of summaries) {
-    try {
-      const newActivity = mapStravaActivityToNewActivity(summary, userId);
-      await upsertActivityFromStrava(newActivity);
-      synced++;
-    } catch (error) {
-      errors++;
-      console.error(
-        `[Strava Sync] Failed to sync activity ${summary.id}:`,
-        extractErrorMessage(error),
-      );
+  // Paginate until Strava returns fewer than perPage results
+  while (true) {
+    const summaries = await listStravaActivities(userId, {
+      after,
+      perPage: PER_PAGE,
+      page,
+    });
+
+    for (const summary of summaries) {
+      try {
+        const newActivity = mapStravaActivityToNewActivity(summary, userId);
+        await upsertActivityFromStrava(newActivity);
+        synced++;
+      } catch (error) {
+        errors++;
+        console.error(
+          `[Strava Sync] Failed to sync activity ${summary.id}:`,
+          extractErrorMessage(error),
+        );
+      }
     }
+
+    if (summaries.length < PER_PAGE) break;
+    page++;
   }
 
   return { synced, errors };
 }
 
-export async function handleStravaDelete(activityId: number): Promise<void> {
-  await deleteActivityByStravaId(String(activityId));
+export async function handleStravaDelete(
+  userId: string,
+  activityId: number,
+): Promise<void> {
+  await deleteActivityByStravaId(String(activityId), userId);
 }

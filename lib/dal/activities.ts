@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { NewActivity } from "@/lib/db/schema";
 
 export async function getActivitiesByUserId(userId: string) {
@@ -46,8 +46,16 @@ export async function upsertActivityFromStrava(data: NewActivity) {
   return activity;
 }
 
-export async function deleteActivityByStravaId(stravaActivityId: string) {
+export async function deleteActivityByStravaId(
+  stravaActivityId: string,
+  userId: string,
+) {
   await db
     .delete(activities)
-    .where(eq(activities.stravaActivityId, stravaActivityId));
+    .where(
+      and(
+        eq(activities.stravaActivityId, stravaActivityId),
+        eq(activities.userId, userId),
+      ),
+    );
 }

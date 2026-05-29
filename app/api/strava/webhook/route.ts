@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getStravaTokensByAthleteId } from "@/lib/dal/strava";
 import { syncSingleActivity, handleStravaDelete } from "@/lib/strava/sync";
 import { extractErrorMessage } from "@/lib/utils/error";
-import type { StravaWebhookEvent } from "@/lib/strava/types";
+
+const stravaWebhookEventSchema = z.object({
+  aspect_type: z.enum(["create", "update", "delete"]),
+  event_time: z.number(),
+  object_id: z.number(),
+  object_type: z.enum(["activity", "athlete"]),
+  owner_id: z.number(),
+  subscription_id: z.number(),
+  updates: z.record(z.string()).default({}),
+});
 
 /**
  * GET /api/strava/webhook
@@ -31,7 +41,25 @@ export async function GET(request: NextRequest) {
  * to prevent Strava retry storms.
  */
 export async function POST(request: NextRequest) {
-  const event: StravaWebhookEvent = await request.json();
+  const body = await request.json();
+  const parsed = stravaWebhookEventSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const event = parsed.data;
+
+  // Verify the event came from our registered subscription
+  if (
+    process.env.STRAVA_SUBSCRIPTION_ID &&
+    String(event.subscription_id) !== process.env.STRAVA_SUBSCRIPTION_ID
+  ) {
+    return NextResponse.json(
+      { error: "Invalid subscription" },
+      { status: 403 },
+    );
+  }
 
   // Ignore non-activity events (e.g. athlete deauthorization)
   if (event.object_type !== "activity") {
@@ -52,13 +80,15 @@ export async function POST(request: NextRequest) {
     if (event.aspect_type === "create" || event.aspect_type === "update") {
       await syncSingleActivity(tokens.userId, event.object_id);
     } else if (event.aspect_type === "delete") {
-      await handleStravaDelete(event.object_id);
+      await handleStravaDelete(tokens.userId, event.object_id);
     }
   } catch (error) {
-    console.error(
-      "[Strava Webhook] Processing error:",
-      extractErrorMessage(error),
-    );
+    console.error("[Strava Webhook] Processing error:", {
+      aspect_type: event.aspect_type,
+      object_id: event.object_id,
+      owner_id: event.owner_id,
+      error: extractErrorMessage(error),
+    });
   }
 
   return NextResponse.json({ received: true });

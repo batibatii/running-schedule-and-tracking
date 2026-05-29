@@ -2,6 +2,7 @@
 
 import { requireAuth } from "@/lib/auth";
 import { getStravaTokensByUserId, deleteStravaAccount } from "@/lib/dal/strava";
+import { getValidStravaToken } from "@/lib/strava/tokens";
 import { syncRecentActivities } from "@/lib/strava/sync";
 import { extractErrorMessage } from "@/lib/utils/error";
 import type { ActionResult } from "@/lib/utils/error";
@@ -38,10 +39,13 @@ export async function disconnectStravaAction(): Promise<ActionResult> {
       return { success: false, message: "Strava not connected" };
     }
 
+    // Get a fresh (auto-refreshed) token before deauthorizing
+    const freshToken = await getValidStravaToken(user.id);
+
     // Revoke access on Strava's side
     await fetch("https://www.strava.com/oauth/deauthorize", {
       method: "POST",
-      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      headers: { Authorization: `Bearer ${freshToken}` },
     });
 
     // Remove the account link from our database
