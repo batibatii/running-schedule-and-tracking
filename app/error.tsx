@@ -15,12 +15,12 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
-      <div className="flex max-w-md flex-col items-center gap-4 rounded-2xl bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-md)]">
-        <h1 className="font-display text-2xl text-[var(--foreground)]">
+    <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="bg-surface flex max-w-md flex-col items-center gap-4 rounded-2xl p-10 text-center shadow-(--shadow-md)">
+        <h1 className="font-display text-foreground text-2xl">
           Something went wrong
         </h1>
-        <p className="text-sm text-[var(--ink-soft)]">
+        <p className="text-ink-soft text-sm">
           An unexpected error occurred. Please try again.
         </p>
         <Button onClick={reset} className="mt-2">

@@ -17,3 +17,13 @@ export const WORKOUT_TYPE_ICON_BACKGROUND: Record<WorkoutType, string> = {
   race: "bg-workout-race",
   interval: "bg-workout-interval",
 };
+
+/** Deep-tone foreground color for italic display workout-type names (Grind&Track DS) */
+export const WORKOUT_TYPE_FOREGROUND: Record<WorkoutType, string> = {
+  easy: "text-workout-easy-fg",
+  tempo: "text-workout-tempo-fg",
+  long: "text-workout-long-fg",
+  recovery: "text-workout-recovery-fg",
+  race: "text-workout-race-fg",
+  interval: "text-workout-interval-fg",
+};

@@ -18,7 +18,7 @@ import type { AdapterAccount } from "next-auth/adapters";
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
-  email: varchar("email", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   password: text("password"),
   image: text("image"),
@@ -82,19 +82,22 @@ export const verificationTokens = pgTable(
   }),
 );
 
-export const runs = pgTable("runs", {
+export const activities = pgTable("activities", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  sport: varchar("sport", { length: 50 }).default("running").notNull(),
   title: varchar("title", { length: 255 }),
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
   duration: integer("duration"), // in seconds
   pace: decimal("pace", { precision: 5, scale: 2 }), // minutes per km
   calories: integer("calories"),
   elevationGain: decimal("elevation_gain", { precision: 10, scale: 2 }), // in meters
+  averageHeartRate: integer("average_heart_rate"),
+  maxHeartRate: integer("max_heart_rate"),
   notes: text("notes"),
-  runDate: timestamp("run_date").notNull(),
+  activityDate: timestamp("activity_date").notNull(),
   isCompleted: boolean("is_completed").default(false).notNull(),
   // Strava integration fields
   stravaActivityId: varchar("strava_activity_id", { length: 255 }).unique(),
@@ -156,7 +159,7 @@ export const weeklyWorkouts = pgTable("weekly_workouts", {
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   sessions: many(sessions),
-  runs: many(runs),
+  activities: many(activities),
   schedules: many(schedules),
   weeklyWorkouts: many(weeklyWorkouts),
 }));
@@ -175,9 +178,9 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
 }));
 
-export const runsRelations = relations(runs, ({ one }) => ({
+export const activitiesRelations = relations(activities, ({ one }) => ({
   user: one(users, {
-    fields: [runs.userId],
+    fields: [activities.userId],
     references: [users.id],
   }),
 }));
@@ -205,8 +208,8 @@ export type NewAccount = typeof accounts.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 
-export type Run = typeof runs.$inferSelect;
-export type NewRun = typeof runs.$inferInsert;
+export type Activity = typeof activities.$inferSelect;
+export type NewActivity = typeof activities.$inferInsert;
 
 export type Schedule = typeof schedules.$inferSelect;
 export type NewSchedule = typeof schedules.$inferInsert;

@@ -81,6 +81,14 @@
   --color-workout-recovery: var(--workout-recovery);
   --color-workout-race: var(--workout-race);
   --color-workout-interval: var(--workout-interval);
+
+  /* Workout type foreground (deep-tone for italic display names) */
+  --color-workout-easy-fg: var(--workout-easy-fg);
+  --color-workout-tempo-fg: var(--workout-tempo-fg);
+  --color-workout-long-fg: var(--workout-long-fg);
+  --color-workout-recovery-fg: var(--workout-recovery-fg);
+  --color-workout-race-fg: var(--workout-race-fg);
+  --color-workout-interval-fg: var(--workout-interval-fg);
 }
 
 :root {
@@ -138,6 +146,14 @@
   --workout-recovery: #e8f0e3;
   --workout-race: #ffaaa5;
   --workout-interval: #ffe5a8;
+
+  /* Workout type foreground — deep-tone for italic display names */
+  --workout-easy-fg: #2f6b50;
+  --workout-tempo-fg: #705220;
+  --workout-long-fg: #2f6b50;
+  --workout-recovery-fg: #2a5573;
+  --workout-race-fg: #8e2b25;
+  --workout-interval-fg: #7a4525;
 
   /* HR zones */
   --z1: #c8e7f2;

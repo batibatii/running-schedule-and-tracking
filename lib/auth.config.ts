@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { verifyPassword } from "@/lib/password";
 import { SESSION_MAX_AGE_7DAYS_SECONDS } from "@/lib/constants/timing";
 
@@ -61,15 +61,17 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/",
+    error: "/", // Redirect OAuth errors (e.g. user cancelled) to login page
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
       }
 
+      // Re-fetch emailVerified on session update (email/password users only)
       if (trigger === "update" && token.email) {
         const [dbUser] = await db
           .select()
@@ -80,17 +82,24 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      if (account?.provider === "strava") {
-        token.stravaAccessToken = account.access_token;
-        token.stravaRefreshToken = account.refresh_token;
-        token.stravaExpiresAt = account.expires_at;
-      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.emailVerified = token.emailVerified as Date | null;
+
+        // Derive stravaConnected from DB (not stale JWT claims)
+        const [stravaAccount] = await db
+          .select({ provider: accounts.provider })
+          .from(accounts)
+          .where(
+            and(
+              eq(accounts.provider, "strava"),
+              eq(accounts.userId, token.id as string),
+            ),
+          );
+        session.user.stravaConnected = !!stravaAccount;
       }
       return session;
     },

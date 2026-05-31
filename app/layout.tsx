@@ -23,8 +23,8 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Running Schedule & Tracking",
-  description: "Created by batibatii",
+  title: "Grind&Track",
+  description: "Schedule your runs, track your progress",
 };
 
 export default function RootLayout({

@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StravaIcon } from "@/components/StravaIcon";
 import {
   LoginAndSignUpType,
   LoginAndSignUpSchema,
@@ -48,6 +47,9 @@ export default function LoginForm() {
 
     if (error === "verification_expired") {
       setError("Your verification link has expired. Please request a new one.");
+      window.history.replaceState({}, "", "/");
+    } else if (error) {
+      window.history.replaceState({}, "", "/");
     }
 
     if (verified === "true") {
@@ -227,25 +229,6 @@ export default function LoginForm() {
               Sign Up
             </Button>
           </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border"></div>
-            <span className="text-muted-foreground text-sm">OR</span>
-            <div className="flex-1 border"></div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              // TODO: Add Strava OAuth login logic here
-              console.log("Strava login clicked");
-            }}
-          >
-            <StravaIcon className="h-5 w-5" />
-            Continue with Strava
-          </Button>
         </form>
       )}
     </div>

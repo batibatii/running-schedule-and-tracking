@@ -9,7 +9,10 @@ import {
   getZoneColor,
 } from "@/lib/utils/workoutLabels";
 import { SportIcon } from "@/components/icons/SportIcon";
-import { WORKOUT_TYPE_ICON_BACKGROUND } from "@/lib/constants/ui";
+import {
+  WORKOUT_TYPE_ICON_BACKGROUND,
+  WORKOUT_TYPE_FOREGROUND,
+} from "@/lib/constants/ui";
 
 interface WorkoutCardProps {
   sport: Sport;
@@ -63,15 +66,21 @@ export function WorkoutCard({
         </span>
       )}
 
-      {/* Header row */}
-      <div className="mt-4 mb-1.5 flex items-center gap-1.5">
+      {/* Sport · italic workout type — Grind&Track DS signature */}
+      <div className="mt-4 mb-2 flex items-baseline gap-1.5">
         <span
-          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full ${WORKOUT_TYPE_ICON_BACKGROUND[workoutType]}`}
+          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center self-center rounded-full ${WORKOUT_TYPE_ICON_BACKGROUND[workoutType]}`}
         >
           <SportIcon sport={sport} size={12} />
         </span>
         <span className="text-[13px] font-semibold">
-          {getSportLabel(sport)} &middot; {getWorkoutTypeLabel(workoutType)}
+          {getSportLabel(sport)}
+        </span>
+        <span className="text-ink-faint text-[13px]">&middot;</span>
+        <span
+          className={`font-display text-[13px] leading-[1.2] tracking-[-0.005em] italic ${WORKOUT_TYPE_FOREGROUND[workoutType]}`}
+        >
+          {getWorkoutTypeLabel(workoutType)}
         </span>
       </div>
 

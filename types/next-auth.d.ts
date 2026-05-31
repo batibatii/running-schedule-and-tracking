@@ -8,6 +8,7 @@ declare module "next-auth" {
     user: {
       id: string;
       emailVerified?: Date | null;
+      stravaConnected?: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -18,8 +19,5 @@ declare module "next-auth/jwt" {
     email?: string;
     name?: string;
     emailVerified?: Date | null;
-    stravaAccessToken?: string;
-    stravaRefreshToken?: string;
-    stravaExpiresAt?: number;
   }
 }

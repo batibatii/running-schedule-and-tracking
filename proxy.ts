@@ -6,6 +6,7 @@ export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const isAuthPage = req.nextUrl.pathname === "/";
   const isApiAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
+  const isStravaRoute = req.nextUrl.pathname.startsWith("/api/strava/");
 
   if (process.env.NODE_ENV === "development") {
     console.log(
@@ -20,7 +21,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/schedule", req.url));
   }
 
-  if (isAuthPage || isApiAuthRoute) {
+  if (isAuthPage || isApiAuthRoute || isStravaRoute) {
     return NextResponse.next();
   }
 
