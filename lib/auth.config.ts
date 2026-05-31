@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
@@ -66,9 +67,13 @@ export const authOptions: NextAuthOptions = {
       userinfo: "https://www.strava.com/api/v3/athlete",
       clientId: process.env.STRAVA_CLIENT_ID,
       clientSecret: process.env.STRAVA_CLIENT_SECRET,
+      // Strava requires credentials in POST body, not Basic Auth header
+      client: {
+        token_endpoint_auth_method: "client_secret_post",
+      },
       profile(profile) {
         return {
-          id: String(profile.id),
+          id: randomUUID(), // Must be a valid UUID for our users table
           name: `${profile.firstname} ${profile.lastname}`,
           email: null, // Strava does not provide email
           image: profile.profile,

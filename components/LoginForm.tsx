@@ -48,6 +48,9 @@ export default function LoginForm() {
 
     if (error === "verification_expired") {
       setError("Your verification link has expired. Please request a new one.");
+      window.history.replaceState({}, "", "/");
+    } else if (error) {
+      window.history.replaceState({}, "", "/");
     }
 
     if (verified === "true") {
