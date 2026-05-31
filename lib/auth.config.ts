@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
@@ -55,31 +54,6 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    {
-      id: "strava",
-      name: "Strava",
-      type: "oauth",
-      authorization: {
-        url: "https://www.strava.com/oauth/authorize",
-        params: { scope: "read,activity:read_all", response_type: "code" },
-      },
-      token: "https://www.strava.com/api/v3/oauth/token",
-      userinfo: "https://www.strava.com/api/v3/athlete",
-      clientId: process.env.STRAVA_CLIENT_ID,
-      clientSecret: process.env.STRAVA_CLIENT_SECRET,
-      // Strava requires credentials in POST body, not Basic Auth header
-      client: {
-        token_endpoint_auth_method: "client_secret_post",
-      },
-      profile(profile) {
-        return {
-          id: randomUUID(), // Must be a valid UUID for our users table
-          name: `${profile.firstname} ${profile.lastname}`,
-          email: null, // Strava does not provide email
-          image: profile.profile,
-        };
-      },
-    },
   ],
   session: {
     strategy: "jwt",
@@ -90,7 +64,7 @@ export const authOptions: NextAuthOptions = {
     error: "/", // Redirect OAuth errors (e.g. user cancelled) to login page
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.email = user.email ?? undefined;
@@ -106,13 +80,6 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.emailVerified = dbUser.emailVerified;
         }
-      }
-
-      // Copy Strava tokens into JWT on initial OAuth sign-in
-      if (account?.provider === "strava") {
-        token.stravaAccessToken = account.access_token;
-        token.stravaRefreshToken = account.refresh_token;
-        token.stravaExpiresAt = account.expires_at;
       }
 
       return token;

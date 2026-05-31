@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StravaIcon } from "@/components/StravaIcon";
 import {
   LoginAndSignUpType,
   LoginAndSignUpSchema,
@@ -230,22 +229,6 @@ export default function LoginForm() {
               Sign Up
             </Button>
           </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border"></div>
-            <span className="text-muted-foreground text-sm">OR</span>
-            <div className="flex-1 border"></div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => signIn("strava", { callbackUrl: "/schedule" })}
-          >
-            <StravaIcon className="h-5 w-5" />
-            Continue with Strava
-          </Button>
         </form>
       )}
     </div>

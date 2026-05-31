@@ -19,8 +19,5 @@ declare module "next-auth/jwt" {
     email?: string;
     name?: string;
     emailVerified?: Date | null;
-    stravaAccessToken?: string;
-    stravaRefreshToken?: string;
-    stravaExpiresAt?: number;
   }
 }
