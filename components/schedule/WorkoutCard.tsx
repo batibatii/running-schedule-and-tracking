@@ -23,6 +23,7 @@ interface WorkoutCardProps {
   title?: string;
   notes?: string;
   completed?: boolean;
+  missed?: boolean;
   onClick?: () => void;
 }
 
@@ -33,6 +34,7 @@ export function WorkoutCard({
   distance,
   duration,
   completed,
+  missed,
   onClick,
 }: WorkoutCardProps) {
   return (
@@ -59,6 +61,13 @@ export function WorkoutCard({
           >
             <path d="M5 12l5 5 9-11" />
           </svg>
+        </span>
+      ) : missed ? (
+        <span
+          title="Missed"
+          className="bg-butter absolute top-2.5 right-2.5 rounded-full px-1.5 py-px text-[10px] font-semibold tracking-[0.06em] text-[#705220] uppercase"
+        >
+          missed
         </span>
       ) : (
         <span className="text-ink-faint absolute top-2.5 right-2.5 text-[10px] tracking-[0.06em] uppercase">

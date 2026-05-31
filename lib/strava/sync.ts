@@ -12,6 +12,7 @@ import type { NewActivity } from "@/lib/db/schema";
 
 /**
  * Transform a Strava activity into our NewActivity schema.
+ * Returns null for unsupported sport types (only running, cycling, swimming are accepted).
  *
  * Unit conversions:
  *   distance:  meters → kilometers (via metersToKm)
@@ -22,15 +23,19 @@ import type { NewActivity } from "@/lib/db/schema";
 function mapStravaActivityToNewActivity(
   activity: StravaSummaryActivity | StravaDetailedActivity,
   userId: string,
-): NewActivity {
-  const distanceKm = metersToKm(activity.distance);
-  const durationSeconds = activity.moving_time;
-  const paceMinPerKm = calculatePaceDecimal(distanceKm, durationSeconds);
-
+): NewActivity | null {
   const sport =
     STRAVA_SPORT_MAP[activity.sport_type] ??
     STRAVA_SPORT_MAP[activity.type] ??
-    "running";
+    null;
+
+  if (sport === null) {
+    return null;
+  }
+
+  const distanceKm = metersToKm(activity.distance);
+  const durationSeconds = activity.moving_time;
+  const paceMinPerKm = calculatePaceDecimal(distanceKm, durationSeconds);
 
   return {
     userId,
@@ -59,10 +64,19 @@ function mapStravaActivityToNewActivity(
 export async function syncSingleActivity(
   userId: string,
   activityId: number,
-): Promise<void> {
+): Promise<{ skipped: boolean }> {
   const detailed = await getStravaActivity(userId, activityId);
   const newActivity = mapStravaActivityToNewActivity(detailed, userId);
+
+  if (newActivity === null) {
+    console.log(
+      `[Strava Sync] Skipping unsupported sport type: ${detailed.sport_type ?? detailed.type}`,
+    );
+    return { skipped: true };
+  }
+
   await upsertActivityFromStrava(newActivity);
+  return { skipped: false };
 }
 
 /**
@@ -91,6 +105,7 @@ export async function syncRecentActivities(
     for (const summary of summaries) {
       try {
         const newActivity = mapStravaActivityToNewActivity(summary, userId);
+        if (newActivity === null) continue;
         await upsertActivityFromStrava(newActivity);
         synced++;
       } catch (error) {
