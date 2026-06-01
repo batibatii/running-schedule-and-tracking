@@ -2,6 +2,7 @@
 
 import { requireAuth } from "@/lib/auth";
 import { getStravaTokensByUserId, deleteStravaAccount } from "@/lib/dal/strava";
+import { deleteActivityById } from "@/lib/dal/activities";
 import { getUserLastSyncedAt, updateLastSyncedAt } from "@/lib/dal/users";
 import { getValidStravaToken } from "@/lib/strava/tokens";
 import { syncActivitiesForPeriod } from "@/lib/strava/sync";
@@ -46,6 +47,16 @@ export async function syncStravaAction(): Promise<
   } catch (error) {
     console.error("[syncStravaAction]", extractErrorMessage(error));
     return { success: false, message: "Failed to sync Strava activities" };
+  }
+}
+
+export async function deleteActivityAction(activityId: string) {
+  try {
+    const user = await requireAuth();
+    await deleteActivityById(activityId, user.id);
+  } catch (error) {
+    console.error("[deleteActivityAction]", extractErrorMessage(error));
+    throw error;
   }
 }
 

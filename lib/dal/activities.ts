@@ -110,6 +110,12 @@ export async function getUnmatchedActivitiesForWeek(
   return db.select().from(activities).where(baseConditions);
 }
 
+export async function deleteActivityById(activityId: string, userId: string) {
+  await db
+    .delete(activities)
+    .where(and(eq(activities.id, activityId), eq(activities.userId, userId)));
+}
+
 export async function deleteActivityByStravaId(
   stravaActivityId: string,
   userId: string,

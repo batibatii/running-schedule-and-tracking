@@ -40,4 +40,4 @@ export interface Preset {
   isCustom: boolean;
 }
 
-export type DragItemType = "workout" | "pill" | "group" | "preset";
+export type DragItemType = "workout" | "pill" | "group" | "preset" | "activity";

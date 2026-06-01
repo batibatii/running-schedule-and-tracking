@@ -11,11 +11,18 @@ import {
   getDayName,
 } from "@/lib/utils/date";
 import { DayOfWeek, Workout } from "@/types/workout";
+import type {
+  ScheduleItem,
+  ScheduleWorkout,
+  StandaloneActivity,
+} from "@/types/schedule";
 import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
+import { ActivityDetailDialog } from "./ActivityDetailDialog";
 import { StatsStrip } from "./StatsStrip";
 import { DroppableDay } from "./DroppableDay";
 import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
+import { DraggableActivityCard } from "./DraggableActivityCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
 import { PillGroupCard } from "@/components/playground/PillGroupCard";
@@ -27,11 +34,12 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { usePlayground } from "@/hooks/usePlayground";
 import { useDragDropManager } from "@/hooks/useDragDropManager";
 import {
-  fetchWorkoutsAction,
+  fetchScheduleItemsAction,
   createWorkoutAction,
   updateWorkoutAction,
   deleteWorkoutAction,
 } from "@/app/actions/workout";
+import { deleteActivityAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
 import {
   DndContext,
@@ -52,11 +60,17 @@ const DAYS_OF_WEEK: DayOfWeek[] = [
   "sunday",
 ];
 
-export function WeeklySchedule() {
+interface WeeklyScheduleProps {
+  syncTrigger?: number;
+}
+
+export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
+  const [viewingActivity, setViewingActivity] =
+    useState<StandaloneActivity | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -64,19 +78,56 @@ export function WeeklySchedule() {
     }),
   );
 
-  const { data: workouts, execute: fetchWorkouts } = useAsyncData<Workout[]>();
+  const { data: scheduleItems, execute: fetchItems } =
+    useAsyncData<ScheduleItem[]>();
 
   const weekStartDate = getWeekStartDate(weekOffset);
   const weekDates = getWeekDates(weekStartDate);
   const weekStartDateISO = formatDateToISO(weekStartDate);
 
   const refreshWorkouts = () => {
-    fetchWorkouts(() => fetchWorkoutsAction(weekStartDateISO));
+    fetchItems(() => fetchScheduleItemsAction(weekStartDateISO));
   };
 
   useEffect(() => {
     refreshWorkouts();
   }, [weekStartDateISO]);
+
+  // Re-fetch when sync completes (triggered from TopBar)
+  useEffect(() => {
+    if (syncTrigger && syncTrigger > 0) {
+      refreshWorkouts();
+    }
+  }, [syncTrigger]);
+
+  // Split schedule items into planned workouts and standalone activities
+  const plannedWorkouts: Workout[] = (scheduleItems ?? [])
+    .filter((item): item is ScheduleWorkout => item.kind === "planned")
+    .map((scheduleWorkout) => ({
+      id: scheduleWorkout.id,
+      userId: scheduleWorkout.userId,
+      sport: scheduleWorkout.sport,
+      workoutType: scheduleWorkout.workoutType,
+      heartRateZone: scheduleWorkout.heartRateZone,
+      dayOfWeek: scheduleWorkout.dayOfWeek,
+      weekStartDate: scheduleWorkout.weekStartDate,
+      distance: scheduleWorkout.distance,
+      duration: scheduleWorkout.duration,
+      pace: scheduleWorkout.pace,
+      title: scheduleWorkout.title,
+      notes: scheduleWorkout.notes,
+      completed: scheduleWorkout.completed,
+      linkedActivityId: scheduleWorkout.linkedActivityId,
+      syncStatus: scheduleWorkout.syncStatus,
+      actualDistance: scheduleWorkout.actualDistance,
+      actualDuration: scheduleWorkout.actualDuration,
+      createdAt: scheduleWorkout.createdAt,
+      updatedAt: scheduleWorkout.updatedAt,
+    }));
+
+  const standaloneActivities: StandaloneActivity[] = (
+    scheduleItems ?? []
+  ).filter((item): item is StandaloneActivity => item.kind === "activity");
 
   const {
     items,
@@ -106,8 +157,9 @@ export function WeeklySchedule() {
     cancelPendingChanges,
     getDisplayWorkouts,
   } = useDragDropManager({
-    workouts,
+    workouts: plannedWorkouts,
     weekStartDateISO,
+    onDeleteActivity: deleteActivityAction,
     addPill,
     addExistingPill,
     addGroup,
@@ -189,6 +241,25 @@ export function WeeklySchedule() {
       if (preset) return <PresetChip preset={preset} isOverlay />;
     }
 
+    if (activeDragType === "activity") {
+      const activity = standaloneActivities.find(
+        (activityItem) => `activity-${activityItem.id}` === activeId,
+      );
+      if (activity) {
+        return (
+          <div style={{ cursor: "grabbing" }}>
+            <WorkoutCard
+              kind="activity"
+              sport={activity.sport}
+              title={activity.title}
+              distance={activity.distance}
+              duration={activity.duration}
+            />
+          </div>
+        );
+      }
+    }
+
     const workout = displayWorkouts.find(
       (workoutItem) => workoutItem.id === activeId,
     );
@@ -196,6 +267,7 @@ export function WeeklySchedule() {
       return (
         <div style={{ cursor: "grabbing" }}>
           <WorkoutCard
+            kind="planned"
             sport={workout.sport}
             workoutType={workout.workoutType}
             heartRateZone={workout.heartRateZone}
@@ -226,7 +298,7 @@ export function WeeklySchedule() {
               This week&apos;s <em className="text-coral-deep">training</em>
             </h1>
             <p className="text-ink-soft mt-1.5 text-sm">
-              Plan, drag and drop your weekly mix. Strava syncs every morning.
+              Plan your week. Strava activities sync automatically.
             </p>
           </div>
 
@@ -278,7 +350,7 @@ export function WeeklySchedule() {
           </div>
         )}
 
-        {/* Stats strip */}
+        {/* Stats strip — only planned workouts */}
         <StatsStrip workouts={displayWorkouts} />
 
         {/* 7-day grid */}
@@ -291,6 +363,9 @@ export function WeeklySchedule() {
               (workout) =>
                 workout.dayOfWeek === day &&
                 workout.weekStartDate === weekStartDateISO,
+            );
+            const dayActivities = standaloneActivities.filter(
+              (activity) => activity.dayOfWeek === day,
             );
 
             return (
@@ -321,27 +396,53 @@ export function WeeklySchedule() {
                   )}
                 </div>
 
-                {/* Workouts */}
+                {/* Planned workouts (draggable) + standalone activities */}
                 <div className="flex max-h-56 flex-1 flex-col overflow-y-auto">
                   <DroppableDay day={day}>
                     <div className="flex flex-1 flex-col gap-2">
-                      {dayWorkouts.length > 0 ? (
-                        dayWorkouts.map((workout) => (
-                          <DroppableWorkoutCard
-                            key={workout.id}
-                            id={workout.id}
-                          >
-                            <WorkoutCard
-                              sport={workout.sport}
-                              workoutType={workout.workoutType}
-                              heartRateZone={workout.heartRateZone}
-                              distance={workout.distance ?? 0}
-                              duration={workout.duration}
-                              completed={workout.completed}
-                              onClick={() => handleOpenDialog(day, workout)}
-                            />
-                          </DroppableWorkoutCard>
-                        ))
+                      {dayWorkouts.length > 0 || dayActivities.length > 0 ? (
+                        <>
+                          {dayWorkouts.map((workout) => (
+                            <DroppableWorkoutCard
+                              key={workout.id}
+                              id={workout.id}
+                            >
+                              <WorkoutCard
+                                kind="planned"
+                                sport={workout.sport}
+                                workoutType={workout.workoutType}
+                                heartRateZone={workout.heartRateZone}
+                                distance={workout.distance ?? 0}
+                                duration={workout.duration}
+                                completed={workout.completed}
+                                syncStatus={workout.syncStatus}
+                                actualDistance={workout.actualDistance}
+                                actualDuration={workout.actualDuration}
+                                onClick={() => handleOpenDialog(day, workout)}
+                              />
+                            </DroppableWorkoutCard>
+                          ))}
+                          {dayActivities.map((activity) => (
+                            <DraggableActivityCard
+                              key={activity.id}
+                              activityId={activity.id}
+                            >
+                              <WorkoutCard
+                                kind="activity"
+                                sport={activity.sport}
+                                title={activity.title}
+                                distance={activity.distance}
+                                duration={activity.duration}
+                                pace={
+                                  activity.pace != null
+                                    ? String(activity.pace)
+                                    : null
+                                }
+                                onClick={() => setViewingActivity(activity)}
+                              />
+                            </DraggableActivityCard>
+                          ))}
+                        </>
                       ) : (
                         <div className="border-line-strong text-ink-faint flex min-h-15 flex-1 items-center justify-center rounded-2xl border border-dashed text-[11px]">
                           Drop here
@@ -396,10 +497,30 @@ export function WeeklySchedule() {
                   pace: editingWorkout.pace,
                   title: editingWorkout.title,
                   notes: editingWorkout.notes,
+                  syncStatus: editingWorkout.syncStatus,
+                  linkedActivityId:
+                    editingWorkout.linkedActivityId ?? undefined,
+                  actualDistance: editingWorkout.actualDistance ?? undefined,
+                  actualDuration: editingWorkout.actualDuration ?? undefined,
+                  completed: editingWorkout.completed,
                 }
               : undefined
           }
         />
+
+        {/* Read-only detail dialog for standalone activities */}
+        <ActivityDetailDialog
+          activity={viewingActivity}
+          onOpenChange={(open) => {
+            if (!open) setViewingActivity(null);
+          }}
+          onDelete={async (activityId) => {
+            await deleteActivityAction(activityId);
+            setViewingActivity(null);
+            refreshWorkouts();
+          }}
+        />
+
         <DragOverlay>
           <div
             className={`transition-transform duration-200 ${isOverTrash ? "scale-75 opacity-60" : ""}`}

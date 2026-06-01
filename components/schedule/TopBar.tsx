@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StravaIcon } from "@/components/StravaIcon";
-import { disconnectStravaAction } from "@/app/actions/strava";
+import { disconnectStravaAction, syncStravaAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
 import { toast } from "sonner";
 
@@ -15,9 +17,14 @@ const NAV_ITEMS = [
   { label: "Profile", href: "/settings" },
 ];
 
-export function TopBar() {
+interface TopBarProps {
+  onSyncComplete?: () => void;
+}
+
+export function TopBar({ onSyncComplete }: TopBarProps) {
   const pathname = usePathname();
   const { data: session, update } = useSession();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const initials = session?.user?.name
     ? session.user.name
@@ -29,7 +36,7 @@ export function TopBar() {
     : "U";
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center">
       {/* Left — Wordmark */}
       <Link
         href="/schedule"
@@ -59,28 +66,56 @@ export function TopBar() {
       </nav>
 
       {/* Right — Strava + logout + avatar */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-end gap-2.5">
         {session?.user?.stravaConnected ? (
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const result = await withToastError(async () => {
-                const res = await disconnectStravaAction();
-                if (!res.success) throw new Error(res.message);
-                return true as const;
-              }, "Failed to disconnect Strava");
-              if (result) {
-                toast.success("Strava disconnected");
-                update();
-              }
-            }}
-            title="Disconnect from Strava"
-            className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
-          >
-            <span className="bg-mint-deep h-1.5 w-1.5 rounded-full" />
-            <StravaIcon className="h-3 w-3 text-[#FC4C02]" />
-            Disconnect
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              disabled={isSyncing}
+              onClick={async () => {
+                setIsSyncing(true);
+                const result = await withToastError(async () => {
+                  const res = await syncStravaAction();
+                  if (!res.success) throw new Error(res.message);
+                  return res.data;
+                }, "Failed to sync Strava");
+                setIsSyncing(false);
+                if (result) {
+                  toast.success(
+                    `Synced ${result.synced} activities — ${result.matched} matched`,
+                  );
+                  onSyncComplete?.();
+                }
+              }}
+              title="Sync Strava activities"
+              className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
+            >
+              <RefreshCw
+                className={`h-3 w-3 text-[#FC4C02] ${isSyncing ? "animate-spin" : ""}`}
+              />
+              {isSyncing ? "Syncing…" : "Sync Strava"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const result = await withToastError(async () => {
+                  const res = await disconnectStravaAction();
+                  if (!res.success) throw new Error(res.message);
+                  return true as const;
+                }, "Failed to disconnect Strava");
+                if (result) {
+                  toast.success("Strava disconnected");
+                  update();
+                }
+              }}
+              title="Disconnect from Strava"
+              className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
+            >
+              <span className="bg-mint-deep h-1.5 w-1.5 rounded-full" />
+              <StravaIcon className="h-3 w-3 text-[#FC4C02]" />
+              Disconnect
+            </Button>
+          </>
         ) : (
           <Button
             variant="outline"

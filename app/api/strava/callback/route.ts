@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { accounts } from "@/lib/db/schema";
 import { extractErrorMessage } from "@/lib/utils/error";
+import { syncActivitiesForPeriod } from "@/lib/strava/sync";
 
 /**
  * GET /api/strava/callback
@@ -74,6 +75,15 @@ export async function GET(request: NextRequest) {
           updatedAt: new Date(),
         },
       });
+
+    // Fire-and-forget: sync last 30 days after connecting/reconnecting.
+    // Not awaited so the redirect happens immediately.
+    syncActivitiesForPeriod(userId, 30).catch((error) =>
+      console.error(
+        "[Strava Callback] Background sync failed:",
+        extractErrorMessage(error),
+      ),
+    );
 
     return NextResponse.redirect(
       new URL("/schedule?strava=connected", request.url),

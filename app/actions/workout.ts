@@ -99,35 +99,6 @@ export async function fetchScheduleItemsAction(
   }
 }
 
-export async function fetchWorkoutsAction(
-  weekStartDate: string,
-): Promise<Workout[]> {
-  try {
-    const user = await requireAuth();
-
-    const workouts = await getWorkouts(user.id, weekStartDate);
-
-    return workouts.map((w) => ({
-      ...w,
-      sport: w.sport as Workout["sport"],
-      workoutType: w.workoutType as Workout["workoutType"],
-      heartRateZone: w.heartRateZone as Workout["heartRateZone"],
-      dayOfWeek: w.dayOfWeek as Workout["dayOfWeek"],
-      distance: Number(w.distance) || 0,
-      duration: w.duration ? Number(w.duration) : undefined,
-      pace: w.pace ?? undefined,
-      title: w.title ?? undefined,
-      notes: w.notes ?? undefined,
-      syncStatus: w.syncStatus as Workout["syncStatus"],
-      actualDistance: w.actualDistance ? Number(w.actualDistance) : null,
-      actualDuration: w.actualDuration ? Number(w.actualDuration) : null,
-    })) satisfies Workout[];
-  } catch (error) {
-    console.error("[fetchWorkoutsAction]", extractErrorMessage(error));
-    throw error;
-  }
-}
-
 export async function createWorkoutAction(
   data: WorkoutFormData,
   dayOfWeek: DayOfWeek,
