@@ -47,6 +47,7 @@ import {
   minutesToPace,
 } from "@/lib/utils/pace";
 import { updateWorkoutSyncStatusAction } from "@/app/actions/workout";
+import type { EditWorkoutData, WorkoutStatus } from "@/types/schedule";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,23 +65,7 @@ interface AddOrEditWorkoutDialogProps {
   dayOfWeek: DayOfWeek;
   onSave: (workout: WorkoutFormData) => Promise<void>;
   onDelete?: (workoutId: string) => Promise<void>;
-  editWorkout?: {
-    id: string;
-    sport: Sport;
-    heartRateZone: string;
-    workoutType: WorkoutType;
-    distance: number;
-    duration?: number;
-    pace?: string;
-    title?: string;
-    notes?: string;
-    // Strava sync fields
-    syncStatus?: "strava" | "manual" | null;
-    linkedActivityId?: string;
-    actualDistance?: number;
-    actualDuration?: number;
-    completed?: boolean;
-  };
+  editWorkout?: EditWorkoutData;
 }
 
 export function AddWorkoutDialog({
@@ -102,7 +87,6 @@ export function AddWorkoutDialog({
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   // Status toggle — local only, persisted on save
-  type WorkoutStatus = "planned" | "completed" | "missed";
   const deriveStatus = (): WorkoutStatus => {
     if (!editWorkout) return "planned";
     if (editWorkout.completed) return "completed";
@@ -119,7 +103,7 @@ export function AddWorkoutDialog({
     const status = deriveStatus();
     setWorkoutStatus(status);
     setInitialStatus(status);
-  }, [editWorkout?.id, open]);
+  }, [editWorkout?.id, editWorkout?.completed, editWorkout?.syncStatus, open]);
 
   const statusChanged = workoutStatus !== initialStatus;
 

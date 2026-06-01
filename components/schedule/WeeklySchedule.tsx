@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
@@ -94,36 +94,20 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   }, [weekStartDateISO]);
 
   // Re-fetch when sync completes (triggered from TopBar)
+  const hasMountedSync = useRef(false);
   useEffect(() => {
-    if (syncTrigger && syncTrigger > 0) {
-      refreshWorkouts();
+    if (!hasMountedSync.current) {
+      hasMountedSync.current = true;
+      return;
     }
+    refreshWorkouts();
   }, [syncTrigger]);
 
   // Split schedule items into planned workouts and standalone activities
+  // ScheduleWorkout is a superset of Workout (+ `kind`), so destructure it out
   const plannedWorkouts: Workout[] = (scheduleItems ?? [])
     .filter((item): item is ScheduleWorkout => item.kind === "planned")
-    .map((scheduleWorkout) => ({
-      id: scheduleWorkout.id,
-      userId: scheduleWorkout.userId,
-      sport: scheduleWorkout.sport,
-      workoutType: scheduleWorkout.workoutType,
-      heartRateZone: scheduleWorkout.heartRateZone,
-      dayOfWeek: scheduleWorkout.dayOfWeek,
-      weekStartDate: scheduleWorkout.weekStartDate,
-      distance: scheduleWorkout.distance,
-      duration: scheduleWorkout.duration,
-      pace: scheduleWorkout.pace,
-      title: scheduleWorkout.title,
-      notes: scheduleWorkout.notes,
-      completed: scheduleWorkout.completed,
-      linkedActivityId: scheduleWorkout.linkedActivityId,
-      syncStatus: scheduleWorkout.syncStatus,
-      actualDistance: scheduleWorkout.actualDistance,
-      actualDuration: scheduleWorkout.actualDuration,
-      createdAt: scheduleWorkout.createdAt,
-      updatedAt: scheduleWorkout.updatedAt,
-    }));
+    .map(({ kind, ...rest }) => rest);
 
   const standaloneActivities: StandaloneActivity[] = (
     scheduleItems ?? []
@@ -433,11 +417,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                                 title={activity.title}
                                 distance={activity.distance}
                                 duration={activity.duration}
-                                pace={
-                                  activity.pace != null
-                                    ? String(activity.pace)
-                                    : null
-                                }
+                                pace={activity.pace ?? null}
                                 onClick={() => setViewingActivity(activity)}
                               />
                             </DraggableActivityCard>
@@ -515,7 +495,11 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
             if (!open) setViewingActivity(null);
           }}
           onDelete={async (activityId) => {
-            await deleteActivityAction(activityId);
+            const result = await withToastError(async () => {
+              await deleteActivityAction(activityId);
+              return true as const;
+            }, "Failed to delete activity");
+            if (!result) return;
             setViewingActivity(null);
             refreshWorkouts();
           }}

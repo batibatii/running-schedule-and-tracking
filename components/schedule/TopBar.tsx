@@ -11,6 +11,9 @@ import { disconnectStravaAction, syncStravaAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
 import { toast } from "sonner";
 
+const PILL_BUTTON_CLASSES =
+  "border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold";
+
 const NAV_ITEMS = [
   { label: "Schedule", href: "/schedule" },
   { label: "Metrics", href: "/workouts" },
@@ -88,7 +91,7 @@ export function TopBar({ onSyncComplete }: TopBarProps) {
                 }
               }}
               title="Sync Strava activities"
-              className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
+              className={PILL_BUTTON_CLASSES}
             >
               <RefreshCw
                 className={`h-3 w-3 text-[#FC4C02] ${isSyncing ? "animate-spin" : ""}`}
@@ -109,7 +112,7 @@ export function TopBar({ onSyncComplete }: TopBarProps) {
                 }
               }}
               title="Disconnect from Strava"
-              className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
+              className={PILL_BUTTON_CLASSES}
             >
               <span className="bg-mint-deep h-1.5 w-1.5 rounded-full" />
               <StravaIcon className="h-3 w-3 text-[#FC4C02]" />
@@ -123,7 +126,7 @@ export function TopBar({ onSyncComplete }: TopBarProps) {
               window.location.href = "/api/strava/connect";
             }}
             title="Connect to Strava"
-            className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft gap-1.75 rounded-full px-3.5 py-2.5 text-xs font-semibold"
+            className={PILL_BUTTON_CLASSES}
           >
             <StravaIcon className="h-3 w-3 text-[#FC4C02]" />
             Connect to Strava
@@ -132,7 +135,7 @@ export function TopBar({ onSyncComplete }: TopBarProps) {
         <Button
           variant="outline"
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="border-line bg-bg-soft text-ink-soft hover:bg-bg-soft rounded-full px-3.5 py-2.5 text-xs font-semibold"
+          className={PILL_BUTTON_CLASSES}
         >
           Sign out
         </Button>

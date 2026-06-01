@@ -1,7 +1,7 @@
 "use client";
 
 import { WorkoutType, HeartRateZone, Sport } from "@/types/workout";
-import { formatDurationClock } from "@/lib/utils/pace";
+import { formatDurationClock, minutesToPace } from "@/lib/utils/pace";
 import {
   getSportLabel,
   getWorkoutTypeLabel,
@@ -37,7 +37,7 @@ interface ActivityCardProps {
   title?: string;
   distance?: number | null;
   duration?: number | null; // minutes
-  pace?: string | null;
+  pace?: number | null; // decimal min/km — formatted in-component
   onClick?: () => void;
 }
 
@@ -185,8 +185,7 @@ function StandaloneActivityCard({
     <Button
       variant="ghost"
       onClick={onClick}
-      className={`${CARD_BASE_CLASSES} bg-surface border-[#FC4C02]/25`}
-      style={{ borderLeftWidth: "3px", borderLeftColor: "#FC4C02" }}
+      className={`${CARD_BASE_CLASSES} bg-surface border-l-[3px] border-[#FC4C02]/25 border-l-[#FC4C02]`}
     >
       {/* Strava badge — top right */}
       <span className="absolute top-2.5 right-2.5 text-[10px] font-semibold tracking-[0.06em] text-[#FC4C02] uppercase">
