@@ -49,10 +49,10 @@ export interface Workout {
   completed: boolean;
 
   // Strava sync fields (populated by matching algorithm)
-  linkedActivityId?: string;
+  linkedActivityId?: string | null;
   syncStatus?: "strava" | "manual" | null;
-  actualDistance?: number; // km
-  actualDuration?: number; // minutes
+  actualDistance?: number | null; // km
+  actualDuration?: number | null; // minutes
 
   createdAt: Date;
   updatedAt: Date;
