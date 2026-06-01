@@ -126,7 +126,7 @@ export interface StravaWebhookEvent {
 /**
  * Maps Strava sport_type / type values to our app's Sport type.
  * Checked in order: sport_type first (more specific), then type (legacy).
- * Unmapped types fall back to "running".
+ * Unmapped types are skipped (not synced to the app).
  */
 export const STRAVA_SPORT_MAP: Record<string, Sport> = {
   // Running

@@ -35,6 +35,7 @@ import { PartialWorkoutUpdate } from "@/types/workoutValidation";
 interface UseDragDropManagerProps {
   workouts: Workout[] | null;
   weekStartDateISO: string;
+  onDeleteActivity?: (activityId: string) => Promise<void>;
   addPill: (
     fieldType: PillFieldType,
     value: string | number,
@@ -135,6 +136,7 @@ function buildWorkoutPayload(fields: {
 export function useDragDropManager({
   workouts,
   weekStartDateISO,
+  onDeleteActivity,
   addPill,
   addExistingPill,
   addGroup,
@@ -587,6 +589,24 @@ export function useDragDropManager({
         return;
       }
 
+      // ── activity → trash (delete standalone Strava activity) ──
+      if (sourceType === "activity" && targetType === "trash") {
+        const activityId = active.data.current?.activityId as string;
+        if (!onDeleteActivity) return;
+
+        const deleteResult = await withToastError(async () => {
+          await onDeleteActivity(activityId);
+          return true as const;
+        }, "Failed to delete activity");
+        if (!deleteResult) return;
+        refreshWorkouts();
+
+        toast.success("Activity deleted", {
+          description: "Re-sync to restore it",
+        });
+        return;
+      }
+
       // ── workout → day (move to different day) ──
       if (sourceType === "workout" && targetType === "day") {
         const workoutId = active.data.current?.workoutId as string;
@@ -678,6 +698,7 @@ export function useDragDropManager({
     [
       workouts,
       weekStartDateISO,
+      onDeleteActivity,
       addPill,
       addExistingPill,
       addGroup,

@@ -6,8 +6,18 @@ import {
   createWorkout,
   updateWorkout,
   deleteWorkout,
+  setWorkoutManualStatus,
+  resetWorkoutToPlanned,
 } from "@/lib/dal/workout";
-import { Workout, DayOfWeek } from "@/types/workout";
+import { getUnmatchedActivitiesForWeek } from "@/lib/dal/activities";
+import { getDayOfWeek } from "@/lib/utils/date";
+import type { Workout, DayOfWeek, Sport } from "@/types/workout";
+import type {
+  ScheduleItem,
+  ScheduleWorkout,
+  StandaloneActivity,
+  SyncStatus,
+} from "@/types/schedule";
 import {
   WorkoutFormData,
   PartialWorkoutUpdate,
@@ -20,28 +30,71 @@ import { extractErrorMessage } from "@/lib/utils/error";
 // error state. Client-side callers in useDragDropManager wrap these with
 // withToastError() for user-facing error toasts.
 
-export async function fetchWorkoutsAction(
+/**
+ * Fetch all schedule items for a given week: planned workouts (enriched with
+ * Strava actual data when linked) + standalone activities (unmatched Strava
+ * activities that have no corresponding planned workout).
+ */
+export async function fetchScheduleItemsAction(
   weekStartDate: string,
-): Promise<Workout[]> {
+): Promise<ScheduleItem[]> {
   try {
     const user = await requireAuth();
 
-    const workouts = await getWorkouts(user.id, weekStartDate);
+    // Planned workouts (including Strava linking columns)
+    const workoutRows = await getWorkouts(user.id, weekStartDate);
+    const scheduleWorkouts: ScheduleWorkout[] = workoutRows.map((workout) => ({
+      kind: "planned" as const,
+      id: workout.id,
+      userId: workout.userId,
+      sport: workout.sport as Sport,
+      workoutType: workout.workoutType as Workout["workoutType"],
+      heartRateZone: workout.heartRateZone as Workout["heartRateZone"],
+      dayOfWeek: workout.dayOfWeek as DayOfWeek,
+      weekStartDate: workout.weekStartDate,
+      distance: Number(workout.distance) || 0,
+      duration: workout.duration ? Number(workout.duration) : undefined,
+      pace: workout.pace ?? undefined,
+      title: workout.title ?? undefined,
+      notes: workout.notes ?? undefined,
+      completed: workout.completed,
+      syncStatus: (workout.syncStatus as SyncStatus) ?? null,
+      linkedActivityId: workout.linkedActivityId ?? undefined,
+      actualDistance: workout.actualDistance
+        ? Number(workout.actualDistance)
+        : undefined,
+      actualDuration: workout.actualDuration
+        ? Number(workout.actualDuration)
+        : undefined,
+      createdAt: workout.createdAt,
+      updatedAt: workout.updatedAt,
+    }));
 
-    return workouts.map((w) => ({
-      ...w,
-      sport: w.sport as Workout["sport"],
-      workoutType: w.workoutType as Workout["workoutType"],
-      heartRateZone: w.heartRateZone as Workout["heartRateZone"],
-      dayOfWeek: w.dayOfWeek as Workout["dayOfWeek"],
-      distance: Number(w.distance) || 0,
-      duration: w.duration ? Number(w.duration) : undefined,
-      pace: w.pace ?? undefined,
-      title: w.title ?? undefined,
-      notes: w.notes ?? undefined,
-    })) satisfies Workout[];
+    // Standalone Strava activities (not matched to any planned workout)
+    const activityRows = await getUnmatchedActivitiesForWeek(
+      user.id,
+      weekStartDate,
+    );
+    const standaloneActivities: StandaloneActivity[] = activityRows.map(
+      (activity) => ({
+        kind: "activity" as const,
+        id: activity.id,
+        userId: activity.userId,
+        sport: activity.sport as Sport,
+        title: activity.title ?? undefined,
+        distance: activity.distance ? Number(activity.distance) : undefined,
+        duration: activity.duration ? activity.duration / 60 : undefined, // seconds → minutes
+        pace: activity.pace ? Number(activity.pace) : undefined,
+        dayOfWeek: getDayOfWeek(new Date(activity.activityDate)),
+        weekStartDate,
+        activityDate: new Date(activity.activityDate),
+        stravaActivityId: activity.stravaActivityId ?? undefined,
+      }),
+    );
+
+    return [...scheduleWorkouts, ...standaloneActivities];
   } catch (error) {
-    console.error("[fetchWorkoutsAction]", extractErrorMessage(error));
+    console.error("[fetchScheduleItemsAction]", extractErrorMessage(error));
     throw error;
   }
 }
@@ -128,6 +181,27 @@ export async function deleteWorkoutAction(workoutId: string) {
     await deleteWorkout(workoutId, user.id);
   } catch (error) {
     console.error("[deleteWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
+}
+
+export async function updateWorkoutSyncStatusAction(
+  workoutId: string,
+  status: "planned" | "completed" | "missed",
+) {
+  try {
+    const user = await requireAuth();
+
+    if (status === "planned") {
+      await resetWorkoutToPlanned(workoutId, user.id);
+    } else {
+      await setWorkoutManualStatus(workoutId, user.id, status === "completed");
+    }
+  } catch (error) {
+    console.error(
+      "[updateWorkoutSyncStatusAction]",
+      extractErrorMessage(error),
+    );
     throw error;
   }
 }

@@ -27,6 +27,23 @@ export async function createUser(data: {
   return newUser;
 }
 
+export async function getUserLastSyncedAt(
+  userId: string,
+): Promise<Date | null> {
+  const [user] = await db
+    .select({ lastSyncedAt: users.lastSyncedAt })
+    .from(users)
+    .where(eq(users.id, userId));
+  return user?.lastSyncedAt ?? null;
+}
+
+export async function updateLastSyncedAt(userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
 export async function markEmailAsVerified(
   email: string,
 ): Promise<User | undefined> {

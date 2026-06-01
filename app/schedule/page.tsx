@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { WeeklySchedule } from "@/components/schedule/WeeklySchedule";
@@ -20,13 +20,15 @@ function StravaToastHandler() {
 }
 
 export default function Schedule() {
+  const [syncTrigger, setSyncTrigger] = useState(0);
+
   return (
     <div className="mx-auto max-w-4/6 px-8 py-8">
       <Suspense>
         <StravaToastHandler />
       </Suspense>
-      <TopBar />
-      <WeeklySchedule />
+      <TopBar onSyncComplete={() => setSyncTrigger((prev) => prev + 1)} />
+      <WeeklySchedule syncTrigger={syncTrigger} />
     </div>
   );
 }

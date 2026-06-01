@@ -40,7 +40,14 @@ import {
   isCompatibleWorkoutType,
 } from "@/lib/utils/workoutLabels";
 import { useEffect, useState } from "react";
-import { calculateDuration, calculatePaceFromDuration } from "@/lib/utils/pace";
+import {
+  calculateDuration,
+  calculatePaceFromDuration,
+  formatDurationClock,
+  minutesToPace,
+} from "@/lib/utils/pace";
+import { updateWorkoutSyncStatusAction } from "@/app/actions/workout";
+import type { EditWorkoutData, WorkoutStatus } from "@/types/schedule";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,17 +65,7 @@ interface AddOrEditWorkoutDialogProps {
   dayOfWeek: DayOfWeek;
   onSave: (workout: WorkoutFormData) => Promise<void>;
   onDelete?: (workoutId: string) => Promise<void>;
-  editWorkout?: {
-    id: string;
-    sport: Sport;
-    heartRateZone: string;
-    workoutType: WorkoutType;
-    distance: number;
-    duration?: number;
-    pace?: string;
-    title?: string;
-    notes?: string;
-  };
+  editWorkout?: EditWorkoutData;
 }
 
 export function AddWorkoutDialog({
@@ -88,6 +85,27 @@ export function AddWorkoutDialog({
   } = useAsyncData();
 
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+
+  // Status toggle — local only, persisted on save
+  const deriveStatus = (): WorkoutStatus => {
+    if (!editWorkout) return "planned";
+    if (editWorkout.completed) return "completed";
+    if (editWorkout.syncStatus != null) return "missed";
+    return "planned";
+  };
+  const [workoutStatus, setWorkoutStatus] =
+    useState<WorkoutStatus>(deriveStatus);
+  const [initialStatus, setInitialStatus] =
+    useState<WorkoutStatus>(deriveStatus);
+
+  // Re-derive status when editWorkout changes (opening a different workout)
+  useEffect(() => {
+    const status = deriveStatus();
+    setWorkoutStatus(status);
+    setInitialStatus(status);
+  }, [editWorkout?.id, editWorkout?.completed, editWorkout?.syncStatus, open]);
+
+  const statusChanged = workoutStatus !== initialStatus;
 
   const {
     register,
@@ -184,6 +202,10 @@ export function AddWorkoutDialog({
     await execute(async () => {
       await onSave(data);
 
+      if (editWorkout && statusChanged) {
+        await updateWorkoutSyncStatusAction(editWorkout.id, workoutStatus);
+      }
+
       // For edit mode, close immediately. For add mode, show success briefly
       if (editWorkout) {
         reset();
@@ -196,6 +218,16 @@ export function AddWorkoutDialog({
           onOpenChange(false);
         }, 1000);
       }
+    });
+  };
+
+  const handleStatusOnlySave = async () => {
+    if (!editWorkout || !statusChanged) return;
+    await execute(async () => {
+      await updateWorkoutSyncStatusAction(editWorkout.id, workoutStatus);
+      reset();
+      resetAsync();
+      onOpenChange(false);
     });
   };
 
@@ -212,6 +244,7 @@ export function AddWorkoutDialog({
   };
 
   const handleClose = () => {
+    setWorkoutStatus(initialStatus);
     reset();
     resetAsync();
     onOpenChange(false);
@@ -233,7 +266,82 @@ export function AddWorkoutDialog({
             </DialogDescription>
           </DialogHeader>
 
+          {/* Status toggle — edit mode only */}
+          {editWorkout && (
+            <div className="mt-4 flex items-center justify-center">
+              <div className="bg-bg-soft inline-flex gap-0.5 rounded-full p-1">
+                {(["planned", "completed", "missed"] as const).map(
+                  (statusOption) => (
+                    <Button
+                      key={statusOption}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setWorkoutStatus(statusOption)}
+                      className={`rounded-full px-4 text-xs font-semibold capitalize ${
+                        workoutStatus === statusOption
+                          ? statusOption === "completed"
+                            ? "bg-mint-deep hover:bg-mint-deep text-white"
+                            : statusOption === "missed"
+                              ? "bg-butter hover:bg-butter text-[#705220]"
+                              : "bg-surface text-foreground hover:bg-surface shadow-sm"
+                          : "text-ink-soft hover:bg-bg-soft"
+                      }`}
+                    >
+                      {statusOption}
+                    </Button>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actual data from Strava — read-only */}
+          {editWorkout?.linkedActivityId && (
+            <div className="bg-bg-soft mt-4 rounded-xl px-4 py-3">
+              <p className="text-ink-faint mb-2 text-[11px] font-medium tracking-wider uppercase">
+                Actual (Strava)
+              </p>
+              <div className="flex items-center gap-4 font-mono text-sm">
+                {editWorkout.actualDistance != null && (
+                  <span>
+                    <span className="text-ink font-semibold">
+                      {editWorkout.actualDistance.toFixed(1)}
+                    </span>
+                    <span className="text-ink-soft"> km</span>
+                  </span>
+                )}
+                {editWorkout.actualDuration != null && (
+                  <span>
+                    <span className="text-ink font-semibold">
+                      {formatDurationClock(editWorkout.actualDuration)}
+                    </span>
+                  </span>
+                )}
+                {editWorkout.actualDistance != null &&
+                  editWorkout.actualDuration != null &&
+                  editWorkout.actualDistance > 0 && (
+                    <span>
+                      <span className="text-ink font-semibold">
+                        {minutesToPace(
+                          editWorkout.actualDuration /
+                            editWorkout.actualDistance,
+                        )}
+                      </span>
+                      <span className="text-ink-soft"> /km</span>
+                    </span>
+                  )}
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 py-4">
+            {/* Section label when actual data is shown */}
+            {editWorkout?.linkedActivityId && (
+              <p className="text-ink-faint text-[11px] font-medium tracking-wider uppercase">
+                Planned
+              </p>
+            )}
             {error && <ErrorAlert message={error} />}
             {success && (
               <SuccessAlert
@@ -435,8 +543,17 @@ export function AddWorkoutDialog({
                 Cancel
               </Button>
               <Button
-                type="submit"
-                disabled={loading || (editWorkout && !isDirty)}
+                type={
+                  editWorkout && statusChanged && !isDirty ? "button" : "submit"
+                }
+                onClick={
+                  editWorkout && statusChanged && !isDirty
+                    ? handleStatusOnlySave
+                    : undefined
+                }
+                disabled={
+                  loading || (editWorkout ? !isDirty && !statusChanged : false)
+                }
               >
                 {loading
                   ? editWorkout

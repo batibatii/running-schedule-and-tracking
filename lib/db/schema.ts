@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   password: text("password"),
   image: text("image"),
+  lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -151,6 +152,14 @@ export const weeklyWorkouts = pgTable("weekly_workouts", {
 
   completed: boolean("completed").default(false).notNull(),
 
+  // Strava activity linking — populated by the matching algorithm after sync
+  linkedActivityId: uuid("linked_activity_id").references(() => activities.id, {
+    onDelete: "set null",
+  }),
+  syncStatus: varchar("sync_status", { length: 20 }), // 'strava' | 'manual' | null
+  actualDistance: decimal("actual_distance", { precision: 10, scale: 2 }), // km
+  actualDuration: decimal("actual_duration", { precision: 10, scale: 2 }), // minutes
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -196,6 +205,10 @@ export const weeklyWorkoutsRelations = relations(weeklyWorkouts, ({ one }) => ({
   user: one(users, {
     fields: [weeklyWorkouts.userId],
     references: [users.id],
+  }),
+  linkedActivity: one(activities, {
+    fields: [weeklyWorkouts.linkedActivityId],
+    references: [activities.id],
   }),
 }));
 
