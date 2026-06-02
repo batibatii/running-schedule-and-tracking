@@ -117,12 +117,12 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="bg-card w-full max-w-md space-y-6 rounded-lg border p-8 shadow-lg">
-      <div className="space-y-2 text-center">
-        <h2 className="text-3xl font-bold tracking-tight">
+    <div className="bg-card w-full max-w-[420px] space-y-5.5 rounded-[18px] border p-8 shadow-(--shadow-lg)">
+      <div className="space-y-1.5 text-center">
+        <h2 className="text-[28px] font-bold tracking-[-0.01em]">
           Track Your Running!
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-ink-soft text-sm">
           {needVerification
             ? "Verify your email to continue"
             : "Enter your credentials to login"}
@@ -210,10 +210,10 @@ export default function LoginForm() {
             )}
           </div>
 
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2 pt-1">
             <Button
               type="submit"
-              className="w-full"
+              className="bg-coral-deep w-full text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_0_rgba(29,19,34,0.04)] hover:bg-[#f57670] hover:shadow-[0_6px_16px_rgba(255,139,131,0.3),inset_0_1px_0_rgba(255,255,255,0.25)]"
               disabled={isSubmitting || loading}
             >
               {isSubmitting || loading ? "Logging in..." : "Login"}

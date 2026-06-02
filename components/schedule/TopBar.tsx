@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StravaIcon } from "@/components/StravaIcon";
+import { RunIcon } from "@/components/icons/SportIcon";
 import { disconnectStravaAction, syncStravaAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
 import { toast } from "sonner";
@@ -40,12 +41,14 @@ export function TopBar({ onSyncComplete }: TopBarProps) {
 
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-      {/* Left — Wordmark */}
-      <Link
-        href="/schedule"
-        className="font-display text-[28px] leading-none tracking-[-0.01em] italic"
-      >
-        Grind<span className="text-coral-deep">&amp;</span>Track
+      {/* Left — Logo lockup */}
+      <Link href="/schedule" className="flex items-center gap-2">
+        <RunIcon size={24} className="text-foreground" />
+        <span className="font-display text-[28px] leading-none tracking-[-0.01em]">
+          Grind
+          <span className="font-display text-coral-deep italic">&amp;</span>
+          Track
+        </span>
       </Link>
 
       {/* Center — Pill nav */}

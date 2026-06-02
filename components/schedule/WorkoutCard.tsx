@@ -11,7 +11,7 @@ import {
 import { SportIcon } from "@/components/icons/SportIcon";
 import { Button } from "@/components/ui/button";
 import {
-  WORKOUT_TYPE_ICON_BACKGROUND,
+  SPORT_ICON_BACKGROUND,
   WORKOUT_TYPE_FOREGROUND,
 } from "@/lib/constants/ui";
 
@@ -123,7 +123,7 @@ function PlannedWorkoutCard({
       {/* Sport · italic workout type */}
       <div className="mt-4 mb-2 flex items-baseline gap-1.5">
         <span
-          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center self-center rounded-full ${WORKOUT_TYPE_ICON_BACKGROUND[workoutType]}`}
+          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center self-center rounded-full ${SPORT_ICON_BACKGROUND[sport]}`}
         >
           <SportIcon sport={sport} size={12} />
         </span>
