@@ -24,7 +24,7 @@ export default function GlobalError({
           justifyContent: "center",
           backgroundColor: "#fff7f2",
           fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-          color: "#221912",
+          color: "#1d1322",
         }}
       >
         <div

@@ -94,21 +94,21 @@
 :root {
   --radius: 0.5rem;
 
-  /* V1 Crisp — Warm pastel palette */
+  /* V1 Crisp — Warm pastel palette (plum ink) */
   --background: #fff7f2;
-  --foreground: #221912;
+  --foreground: #1d1322;
   --card: #ffffff;
-  --card-foreground: #221912;
+  --card-foreground: #1d1322;
   --popover: #ffffff;
-  --popover-foreground: #221912;
+  --popover-foreground: #1d1322;
   --primary: #ff8b83;
   --primary-foreground: #ffffff;
   --secondary: #fcefe5;
-  --secondary-foreground: #221912;
+  --secondary-foreground: #1d1322;
   --muted: #fcefe5;
   --muted-foreground: #6b5c53;
   --accent: #fcefe5;
-  --accent-foreground: #221912;
+  --accent-foreground: #1d1322;
   --destructive: #e5534b;
   --destructive-foreground: #ffffff;
   --border: #efe3d7;
@@ -118,6 +118,7 @@
   /* V1 extended tokens */
   --surface: #ffffff;
   --bg-soft: #fcefe5;
+  --ink-strong: #1d1322;
   --ink-soft: #6b5c53;
   --ink-faint: #a89a8f;
   --line: #efe3d7;
@@ -135,9 +136,9 @@
   --sky: #bcddf5;
 
   /* Sport colors */
-  --sport-running: #ffd3b6;
-  --sport-cycling: #bcddf5;
-  --sport-swimming: #a8e6cf;
+  --sport-running: #a8e6cf;
+  --sport-cycling: #ffd3b6;
+  --sport-swimming: #bcddf5;
 
   /* Workout type colors */
   --workout-easy: #c8f2dc;
@@ -171,20 +172,57 @@
 
   /* Sidebar */
   --sidebar: #ffffff;
-  --sidebar-foreground: #221912;
+  --sidebar-foreground: #1d1322;
   --sidebar-primary: #ff8b83;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #fcefe5;
-  --sidebar-accent-foreground: #221912;
+  --sidebar-accent-foreground: #1d1322;
   --sidebar-border: #efe3d7;
   --sidebar-ring: #ff8b83;
 
-  /* Shadows — warm cast */
-  --shadow-xs: 0 1px 0 rgba(34, 25, 18, 0.04);
+  /* Shadows — plum-ink cast */
+  --shadow-xs: 0 1px 0 rgba(29, 19, 34, 0.04);
   --shadow-sm:
-    0 1px 2px rgba(34, 25, 18, 0.04), 0 2px 6px rgba(34, 25, 18, 0.04);
-  --shadow-md: 0 4px 14px rgba(34, 25, 18, 0.06);
-  --shadow-lg: 0 12px 32px rgba(34, 25, 18, 0.1);
+    0 1px 2px rgba(29, 19, 34, 0.04), 0 2px 6px rgba(29, 19, 34, 0.04);
+  --shadow-md: 0 4px 14px rgba(29, 19, 34, 0.06);
+  --shadow-lg: 0 12px 32px rgba(29, 19, 34, 0.1);
+
+  /* Inset shadows */
+  --shadow-press-inset: inset 0 0 0 3px white;
+  --shadow-inset-hairline: inset 0 0 0 1px rgba(29, 19, 34, 0.06);
+  --shadow-inset-well: inset 0 2px 4px rgba(29, 19, 34, 0.06);
+  --shadow-inset-bevel: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --shadow-inset-focus:
+    0 0 0 3px rgba(255, 139, 131, 0.4), inset 0 0 0 1px #ff8b83;
+  --shadow-inset-coral: inset 0 0 0 1px rgba(255, 139, 131, 0.35);
+
+  /* Pill chip palette (workout-builder playground) */
+  --pill-sport-bg: #e5f2fb;
+  --pill-sport-fg: #2a5573;
+  --pill-sport-border: #c9dfef;
+  --pill-workout-type-bg: #ede3fb;
+  --pill-workout-type-fg: #48356e;
+  --pill-workout-type-border: #d9c7f0;
+  --pill-zone-bg: #ffe5d6;
+  --pill-zone-fg: #7a4525;
+  --pill-zone-border: #f7cfb4;
+  --pill-distance-bg: #dcf1e5;
+  --pill-distance-fg: #2d5840;
+  --pill-distance-border: #bee2cc;
+  --pill-pace-bg: #ffefc8;
+  --pill-pace-fg: #705220;
+  --pill-pace-border: #f2dda0;
+
+  /* Group card (merged playground pills) */
+  --group-card-bg: #fff1f4;
+  --group-card-border: #ffd2da;
+  --group-card-fg: #c9818d;
+
+  /* Toast tints */
+  --toast-success-bg: #d4f5e4;
+  --toast-error-bg: #ffd4d1;
+  --toast-warning-bg: #fff0d4;
+  --toast-info-bg: #e0edff;
 }
 
 .dark {
