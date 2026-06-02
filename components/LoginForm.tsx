@@ -117,7 +117,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="bg-card w-full max-w-[420px] space-y-5.5 rounded-[18px] border p-8 shadow-(--shadow-lg)">
+    <div className="bg-card w-full max-w-105 space-y-5.5 rounded-[18px] border p-8 shadow-(--shadow-lg)">
       <div className="space-y-1.5 text-center">
         <h2 className="text-[28px] font-bold tracking-[-0.01em]">
           Track Your Running!

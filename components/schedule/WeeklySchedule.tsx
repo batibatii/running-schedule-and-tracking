@@ -20,8 +20,8 @@ import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { ActivityDetailDialog } from "./ActivityDetailDialog";
 import { StatsStrip } from "./StatsStrip";
-import { DroppableDay } from "./DroppableDay";
-import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
+import { SortableDay } from "./SortableDay";
+import { SortableWorkoutCard } from "./SortableWorkoutCard";
 import { DraggableActivityCard } from "./DraggableActivityCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
@@ -380,56 +380,47 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                   )}
                 </div>
 
-                {/* Planned workouts (draggable) + standalone activities */}
+                {/* Planned workouts (sortable) + standalone activities */}
                 <div className="flex max-h-56 flex-1 flex-col overflow-y-auto">
-                  <DroppableDay day={day}>
-                    <div className="flex flex-1 flex-col gap-2">
-                      {dayWorkouts.length > 0 || dayActivities.length > 0 ? (
-                        <>
-                          {dayWorkouts.map((workout) => (
-                            <DroppableWorkoutCard
-                              key={workout.id}
-                              id={workout.id}
-                            >
-                              <WorkoutCard
-                                kind="planned"
-                                sport={workout.sport}
-                                workoutType={workout.workoutType}
-                                heartRateZone={workout.heartRateZone}
-                                distance={workout.distance ?? 0}
-                                duration={workout.duration}
-                                completed={workout.completed}
-                                syncStatus={workout.syncStatus}
-                                actualDistance={workout.actualDistance}
-                                actualDuration={workout.actualDuration}
-                                onClick={() => handleOpenDialog(day, workout)}
-                              />
-                            </DroppableWorkoutCard>
-                          ))}
-                          {dayActivities.map((activity) => (
-                            <DraggableActivityCard
-                              key={activity.id}
-                              activityId={activity.id}
-                            >
-                              <WorkoutCard
-                                kind="activity"
-                                sport={activity.sport}
-                                title={activity.title}
-                                distance={activity.distance}
-                                duration={activity.duration}
-                                pace={activity.pace ?? null}
-                                onClick={() => setViewingActivity(activity)}
-                              />
-                            </DraggableActivityCard>
-                          ))}
-                        </>
-                      ) : (
-                        <div className="border-line-strong text-ink-faint flex min-h-15 flex-1 items-center justify-center rounded-2xl border border-dashed text-[11px]">
-                          Drop here
-                        </div>
-                      )}
-                    </div>
-                  </DroppableDay>
+                  <SortableDay
+                    day={day}
+                    workoutIds={dayWorkouts.map((workout) => workout.id)}
+                    isDragActive={activeId !== null}
+                  >
+                    {dayWorkouts.map((workout) => (
+                      <SortableWorkoutCard key={workout.id} id={workout.id}>
+                        <WorkoutCard
+                          kind="planned"
+                          sport={workout.sport}
+                          workoutType={workout.workoutType}
+                          heartRateZone={workout.heartRateZone}
+                          distance={workout.distance ?? 0}
+                          duration={workout.duration}
+                          completed={workout.completed}
+                          syncStatus={workout.syncStatus}
+                          actualDistance={workout.actualDistance}
+                          actualDuration={workout.actualDuration}
+                          onClick={() => handleOpenDialog(day, workout)}
+                        />
+                      </SortableWorkoutCard>
+                    ))}
+                    {dayActivities.map((activity) => (
+                      <DraggableActivityCard
+                        key={activity.id}
+                        activityId={activity.id}
+                      >
+                        <WorkoutCard
+                          kind="activity"
+                          sport={activity.sport}
+                          title={activity.title}
+                          distance={activity.distance}
+                          duration={activity.duration}
+                          pace={activity.pace ?? null}
+                          onClick={() => setViewingActivity(activity)}
+                        />
+                      </DraggableActivityCard>
+                    ))}
+                  </SortableDay>
                 </div>
 
                 {/* Add workout button */}

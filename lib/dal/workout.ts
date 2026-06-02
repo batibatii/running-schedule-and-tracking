@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { weeklyWorkouts } from "@/lib/db/schema";
-import { eq, and, or, isNull, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, inArray, asc, max } from "drizzle-orm";
 import { CreateWorkoutInputType } from "@/types/workoutValidation";
 
 export async function getWorkouts(
@@ -17,7 +17,8 @@ export async function getWorkouts(
             eq(weeklyWorkouts.weekStartDate, weekStartDate),
           )
         : eq(weeklyWorkouts.userId, userId),
-    );
+    )
+    .orderBy(asc(weeklyWorkouts.sortOrder), asc(weeklyWorkouts.createdAt));
 
   return workouts;
 }
@@ -36,6 +37,19 @@ export async function createWorkout(
   userId: string,
   validatedData: CreateWorkoutInputType,
 ) {
+  const [{ maxSort }] = await db
+    .select({ maxSort: max(weeklyWorkouts.sortOrder) })
+    .from(weeklyWorkouts)
+    .where(
+      and(
+        eq(weeklyWorkouts.userId, userId),
+        eq(weeklyWorkouts.dayOfWeek, validatedData.dayOfWeek),
+        eq(weeklyWorkouts.weekStartDate, validatedData.weekStartDate),
+      ),
+    );
+
+  const nextSortOrder = (maxSort ?? 0) + 1;
+
   const [newWorkout] = await db
     .insert(weeklyWorkouts)
     .values({
@@ -46,6 +60,7 @@ export async function createWorkout(
         validatedData.duration !== undefined
           ? String(validatedData.duration)
           : undefined,
+      sortOrder: nextSortOrder,
     })
     .returning();
 
@@ -80,6 +95,33 @@ export async function deleteWorkout(workoutId: string, userId: string) {
     .where(
       and(eq(weeklyWorkouts.id, workoutId), eq(weeklyWorkouts.userId, userId)),
     );
+}
+
+// ---------------------------------------------------------------------------
+// Reordering within a day
+// ---------------------------------------------------------------------------
+
+/**
+ * Batch-update sortOrder for all workouts in a day based on the provided
+ * ordered array of workout IDs. Each ID gets sortOrder = its array index.
+ */
+export async function reorderWorkoutsInDay(
+  userId: string,
+  orderedIds: string[],
+) {
+  await db.transaction(async (transaction) => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await transaction
+        .update(weeklyWorkouts)
+        .set({ sortOrder: i, updatedAt: new Date() })
+        .where(
+          and(
+            eq(weeklyWorkouts.id, orderedIds[i]),
+            eq(weeklyWorkouts.userId, userId),
+          ),
+        );
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

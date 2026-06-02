@@ -48,6 +48,8 @@ export interface Workout {
 
   completed: boolean;
 
+  sortOrder: number;
+
   // Strava sync fields (populated by matching algorithm)
   linkedActivityId?: string | null;
   syncStatus?: "strava" | "manual" | null;
