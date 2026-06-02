@@ -3,7 +3,7 @@ import LoginForm from "@/components/LoginForm";
 
 export default function Home() {
   return (
-    <main className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+    <main className="bg-background min-h-screen">
       <Suspense>
         <LoginForm />
       </Suspense>

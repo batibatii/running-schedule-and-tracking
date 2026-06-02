@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,37 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signUpAction, resendVerificationAction } from "@/app/actions/auth";
 
+type Mode = "login" | "signup";
+interface MinimalFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  error?: string;
+}
+
+const MinimalField = forwardRef<HTMLInputElement, MinimalFieldProps>(
+  function MinimalField({ label, error, ...props }, ref) {
+    return (
+      <div>
+        <div className="border-line-strong flex items-baseline gap-4 border-b py-3.5">
+          <Label className="text-ink-faint min-w-20 gap-0 pb-0 pl-0 font-mono text-[10px] tracking-[0.18em] uppercase">
+            {label}
+          </Label>
+          <Input
+            ref={ref}
+            className="font-display text-foreground placeholder:text-ink-faint/50 h-auto w-auto min-w-0 flex-1 rounded-none border-none bg-transparent px-0 py-0 text-[16px] shadow-none ring-0 outline-none focus-visible:border-none focus-visible:ring-0 focus-visible:ring-transparent"
+            {...props}
+          />
+        </div>
+        {error && <p className="mt-1 text-[11px] text-red-500">{error}</p>}
+      </div>
+    );
+  },
+);
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mode, setMode] = useState<Mode>("login");
+
   const {
     register,
     handleSubmit,
@@ -42,13 +70,13 @@ export default function LoginForm() {
   } = useAsyncData();
 
   useEffect(() => {
-    const error = searchParams.get("error");
+    const urlError = searchParams.get("error");
     const verified = searchParams.get("verified");
 
-    if (error === "verification_expired") {
+    if (urlError === "verification_expired") {
       setError("Your verification link has expired. Please request a new one.");
       window.history.replaceState({}, "", "/");
-    } else if (error) {
+    } else if (urlError) {
       window.history.replaceState({}, "", "/");
     }
 
@@ -63,46 +91,41 @@ export default function LoginForm() {
     setNeedVerification(false);
     setUnverifiedEmail("");
 
-    await execute(async () => {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-      if (result?.error) {
-        if (result.error === "EMAIL_NOT_VERIFIED") {
-          setNeedVerification(true);
-          setUnverifiedEmail(data.email);
-          throw new Error("Please verify your email before logging in");
+    if (mode === "login") {
+      await execute(async () => {
+        const result = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
+        if (result?.error) {
+          if (result.error === "EMAIL_NOT_VERIFIED") {
+            setNeedVerification(true);
+            setUnverifiedEmail(data.email);
+            throw new Error("Please verify your email before logging in");
+          }
+          throw new Error(result.error);
         }
-        throw new Error(result.error);
-      }
 
-      setTimeout(() => {
-        router.push("/schedule");
-      }, 1500);
-    });
-  };
-
-  const handleSignUp = async () => {
-    const formData = handleSubmit(async (data: LoginAndSignUpType) => {
+        setTimeout(() => {
+          router.push("/schedule");
+        }, 1500);
+      });
+    } else {
       await execute(async () => {
         const result = await signUpAction(data.email, data.password);
-
         if (!result.success) {
           throw new Error(result.message);
         }
         setNeedVerification(true);
         setUnverifiedEmail(data.email);
       });
-    });
-    formData();
+    }
   };
 
   const handleResendVerification = async () => {
     await executeResend(async () => {
       const result = await resendVerificationAction(unverifiedEmail);
-
       if (!result.success) {
         throw new Error(result.message);
       }
@@ -114,123 +137,167 @@ export default function LoginForm() {
     setUnverifiedEmail("");
     setError(undefined);
     setSuccess(false);
+    setMode("login");
+  };
+
+  const toggleMode = () => {
+    setMode(mode === "login" ? "signup" : "login");
+    setError(undefined);
+    setSuccess(false);
   };
 
   return (
-    <div className="bg-card w-full max-w-105 space-y-5.5 rounded-[18px] border p-8 shadow-(--shadow-lg)">
-      <div className="space-y-1.5 text-center">
-        <h2 className="text-[28px] font-bold tracking-[-0.01em]">
-          Track Your Running!
-        </h2>
-        <p className="text-ink-soft text-sm">
-          {needVerification
-            ? "Verify your email to continue"
-            : "Enter your credentials to login"}
-        </p>
+    <div className="flex min-h-screen flex-col font-sans">
+      {/* ── Top bar: wordmark ── */}
+      <div className="flex items-center px-12 py-8">
+        <span className="font-display text-[24px] leading-none tracking-[-0.01em]">
+          Grind
+          <span className="font-display text-coral-deep italic">&amp;</span>
+          Track
+        </span>
       </div>
 
-      {error && !needVerification && <ErrorAlert message={error} />}
+      {/* ── Centered form ── */}
+      <div className="flex flex-1 items-center justify-center px-12">
+        <div className="flex w-full max-w-115 flex-col gap-6">
+          {needVerification ? (
+            /* ── Verification state ── */
+            <>
+              <div className="text-center">
+                <div className="text-ink-faint mb-4.5 font-mono text-[10px] tracking-[0.22em] uppercase">
+                  — Verify email —
+                </div>
+                <h1 className="font-display m-0 text-[64px] leading-[0.95] font-normal tracking-[-0.02em]">
+                  Check your <em className="text-coral-deep">inbox</em>.
+                </h1>
+                <p className="text-ink-soft mx-auto mt-3.5 max-w-85 text-[14px] leading-[1.55]">
+                  We sent a verification link to{" "}
+                  <span className="text-foreground font-medium">
+                    {unverifiedEmail}
+                  </span>
+                </p>
+              </div>
 
-      {success && !needVerification && (
-        <SuccessAlert
-          message="Login successful! Redirecting..."
-          className="bg-white pl-2"
-        />
-      )}
+              {resendSuccess && (
+                <SuccessAlert message="Verification email sent! Check your inbox." />
+              )}
+              {resendError && <ErrorAlert message={resendError} />}
 
-      {needVerification ? (
-        <div className="space-y-4">
-          <div className="space-y-4 rounded-lg border border-orange-200 bg-orange-50 p-6">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-orange-900">
-                📧 Email Verification Required
-              </h3>
-              <p className="text-sm text-orange-800">
-                We&apos;ve sent a verification email to:
-              </p>
-              <p className="rounded border border-orange-200 bg-white px-3 py-2 text-sm font-medium text-orange-900">
-                {unverifiedEmail}
-              </p>
-              <p className="mt-2 text-sm text-orange-800">
-                Please check your inbox and click the verification link to
-                activate your account.
-              </p>
-            </div>
-
-            {resendSuccess && (
-              <SuccessAlert message="Verification email sent! Check your inbox." />
-            )}
-
-            {resendError && <ErrorAlert message={resendError} />}
-
-            <div className="space-y-2 pt-2">
               <Button
                 type="button"
+                variant="ghost"
                 onClick={handleResendVerification}
                 disabled={resendLoading}
-                className="w-full"
+                className="border-b-foreground text-foreground flex h-auto items-center justify-between rounded-none border-0 border-b-2 bg-transparent px-6 py-3.5 text-[12px] font-medium tracking-[0.22em] uppercase shadow-none hover:bg-transparent disabled:opacity-50"
               >
-                {resendLoading ? "Sending..." : "Resend Verification Email"}
+                <span>
+                  {resendLoading ? "Sending..." : "Resend verification"}
+                </span>
+                <span>→</span>
               </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBackToLogin}
-                className="w-full"
-              >
-                ← Back to Login
-              </Button>
-            </div>
-          </div>
+              <p className="text-ink-soft mt-1 text-center text-[12px]">
+                Wrong email?{" "}
+                <button
+                  onClick={handleBackToLogin}
+                  className="border-foreground text-foreground cursor-pointer border-b bg-transparent p-0 font-medium"
+                >
+                  Start over
+                </button>
+              </p>
+            </>
+          ) : (
+            /* ── Login / Signup form ── */
+            <>
+              <div className="text-center">
+                <div className="text-ink-faint mb-4.5 font-mono text-[10px] tracking-[0.22em] uppercase">
+                  {mode === "login" ? "— Sign in —" : "— Create account —"}
+                </div>
+                <h1 className="font-display m-0 text-[64px] leading-[0.95] font-normal tracking-[-0.02em]">
+                  {mode === "login" ? (
+                    <>
+                      Welcome <em className="text-coral-deep">back</em>.
+                    </>
+                  ) : (
+                    <>
+                      Begin <em className="text-coral-deep">your week</em>.
+                    </>
+                  )}
+                </h1>
+                <p className="text-ink-soft mx-auto mt-3.5 max-w-85 text-[14px] leading-[1.55]">
+                  {mode === "login"
+                    ? "Pick up where last Sunday left off."
+                    : "A quiet place to plan your week of running."}
+                </p>
+              </div>
+
+              {error && <ErrorAlert message={error} />}
+              {success && (
+                <SuccessAlert
+                  message="Login successful! Redirecting..."
+                  className="bg-white pl-2"
+                />
+              )}
+
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
+                <div className="flex flex-col">
+                  <MinimalField
+                    label="Email"
+                    placeholder="email@example.com"
+                    type="email"
+                    error={errors.email?.message}
+                    {...register("email")}
+                  />
+                  <MinimalField
+                    label="Password"
+                    placeholder="••••••••••"
+                    type="password"
+                    error={errors.password?.message}
+                    {...register("password")}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  disabled={isSubmitting || loading}
+                  className="border-b-foreground text-foreground mt-6 flex h-auto items-center justify-between rounded-none border-0 border-b-2 bg-transparent px-6 py-3.5 text-[12px] font-medium tracking-[0.22em] uppercase shadow-none hover:bg-transparent disabled:opacity-50"
+                >
+                  <span>
+                    {isSubmitting || loading
+                      ? mode === "login"
+                        ? "Signing in..."
+                        : "Creating account..."
+                      : mode === "login"
+                        ? "Continue"
+                        : "Create account"}
+                  </span>
+                  <span>→</span>
+                </Button>
+              </form>
+
+              <p className="text-ink-soft mt-1 text-center text-[12px]">
+                {mode === "login"
+                  ? "New to Grind&Track? "
+                  : "Already have an account? "}
+                <button
+                  onClick={toggleMode}
+                  className="border-foreground text-foreground cursor-pointer border-b bg-transparent p-0 font-medium"
+                >
+                  {mode === "login" ? "Create an account" : "Sign in"}
+                </button>
+              </p>
+            </>
+          )}
         </div>
-      ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              {...register("email")}
-            />
-            {errors.email && <ErrorAlert message={errors.email.message} />}
-          </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              {...register("password")}
-            />
-            {errors.password && (
-              <ErrorAlert message={errors.password.message} />
-            )}
-          </div>
-
-          <div className="space-y-2 pt-1">
-            <Button
-              type="submit"
-              className="bg-coral-deep w-full text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_0_rgba(29,19,34,0.04)] hover:bg-[#f57670] hover:shadow-[0_6px_16px_rgba(255,139,131,0.3),inset_0_1px_0_rgba(255,255,255,0.25)]"
-              disabled={isSubmitting || loading}
-            >
-              {isSubmitting || loading ? "Logging in..." : "Login"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleSignUp}
-              disabled={loading}
-            >
-              Sign Up
-            </Button>
-          </div>
-        </form>
-      )}
+      {/* ── Bottom rule + epigraph ── */}
+      <div className="border-line flex items-center border-t px-12 py-5">
+        <span className="font-display text-ink-soft text-[16px] italic">
+          &ldquo;The miles are kind to those who keep showing up.&rdquo;
+        </span>
+      </div>
     </div>
   );
 }
