@@ -7,6 +7,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { DayOfWeek } from "@/types/workout";
+import { GripVertical } from "lucide-react";
 
 interface InsertionIndicatorProps {
   day: DayOfWeek;
@@ -14,8 +15,8 @@ interface InsertionIndicatorProps {
 }
 
 /**
- * Visible droppable zone between workout cards during active drag.
- * Always rendered with enough height to be a valid drop target.
+ * Visible droppable zone between workout cards during cross-day drag.
+ * Thin line with dots at each end — expands on hover.
  */
 function InsertionIndicator({ day, index }: InsertionIndicatorProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -26,17 +27,25 @@ function InsertionIndicator({ day, index }: InsertionIndicatorProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex items-center justify-center rounded-xl border border-dashed transition-all duration-150 ${
-        isOver
-          ? "border-coral-deep/40 bg-mint/20 min-h-8"
-          : "border-line min-h-5"
+      className={`flex items-center transition-all duration-150 ${
+        isOver ? "my-0.5 min-h-6" : "min-h-3"
       }`}
     >
-      <span
-        className={`text-[10px] ${isOver ? "text-coral-deep" : "text-ink-faint"}`}
+      <div
+        className={`flex w-full items-center gap-0.5 ${
+          isOver ? "opacity-100" : "opacity-40"
+        }`}
       >
-        Drop here
-      </span>
+        <span
+          className={`h-1.5 w-1.5 shrink-0 rounded-full ${isOver ? "bg-coral-deep" : "bg-ink-faint"}`}
+        />
+        <span
+          className={`h-0.5 flex-1 rounded-full ${isOver ? "bg-coral-deep" : "bg-line-strong"}`}
+        />
+        <span
+          className={`h-1.5 w-1.5 shrink-0 rounded-full ${isOver ? "bg-coral-deep" : "bg-ink-faint"}`}
+        />
+      </div>
     </div>
   );
 }
@@ -45,6 +54,10 @@ interface SortableDayProps {
   day: DayOfWeek;
   workoutIds: string[];
   showInsertionSlots: boolean;
+  /** True when the day has no workouts AND no activities — shows empty drop zone */
+  isEmpty: boolean;
+  /** True when any drag operation is in progress */
+  isDragActive: boolean;
   children: React.ReactNode;
 }
 
@@ -52,22 +65,17 @@ export function SortableDay({
   day,
   workoutIds,
   showInsertionSlots,
+  isEmpty,
+  isDragActive,
   children,
 }: SortableDayProps) {
-  const hasWorkouts = workoutIds.length > 0;
-
   // Day-level droppable — catch-all for drops anywhere in the column
   const { setNodeRef: setDayRef, isOver: isDayOver } = useDroppable({
     id: day,
     data: { type: "day", day },
   });
 
-  // First N children are sortable workouts, the rest are activities (always at bottom)
-  const childArray = React.Children.toArray(children);
-  const workoutChildren = childArray.slice(0, workoutIds.length);
-  const activityChildren = childArray.slice(workoutIds.length);
-
-  if (!hasWorkouts && activityChildren.length === 0) {
+  if (isEmpty) {
     return (
       <SortableContext
         items={workoutIds}
@@ -81,7 +89,17 @@ export function SortableDay({
               : "border-line-strong text-ink-faint"
           }`}
         >
-          <span className="text-ink-faint text-[11px]">Drop here</span>
+          {isDragActive ? (
+            <span className="text-ink-faint animate-in fade-in text-[11px] duration-200">
+              Drop here
+            </span>
+          ) : (
+            <GripVertical
+              size={25}
+              strokeWidth={1.5}
+              className="text-ink-faint/30"
+            />
+          )}
         </div>
       </SortableContext>
     );
@@ -92,18 +110,17 @@ export function SortableDay({
       <div ref={setDayRef} className="flex flex-1 flex-col gap-1">
         {showInsertionSlots ? (
           <>
-            {workoutChildren.map((child, childIndex) => (
-              <React.Fragment key={childIndex}>
+            {React.Children.map(children, (child, childIndex) => (
+              <React.Fragment key={workoutIds[childIndex] ?? childIndex}>
                 <InsertionIndicator day={day} index={childIndex} />
                 {child}
               </React.Fragment>
             ))}
-            <InsertionIndicator day={day} index={workoutChildren.length} />
+            <InsertionIndicator day={day} index={workoutIds.length} />
           </>
         ) : (
-          workoutChildren
+          children
         )}
-        {activityChildren}
       </div>
     </SortableContext>
   );

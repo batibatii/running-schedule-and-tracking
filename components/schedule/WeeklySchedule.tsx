@@ -10,7 +10,7 @@ import {
   formatDateToISO,
   getDayName,
 } from "@/lib/utils/date";
-import { DayOfWeek, Workout } from "@/types/workout";
+import { DAYS_OF_WEEK, DayOfWeek, Workout } from "@/types/workout";
 import type {
   ScheduleItem,
   ScheduleWorkout,
@@ -49,16 +49,6 @@ import {
   PointerSensor,
   pointerWithin,
 } from "@dnd-kit/core";
-
-const DAYS_OF_WEEK: DayOfWeek[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-];
 
 interface WeeklyScheduleProps {
   syncTrigger?: number;
@@ -388,7 +378,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                 </div>
 
                 {/* Planned workouts (sortable) + standalone activities */}
-                <div className="flex max-h-56 flex-1 flex-col overflow-y-auto">
+                <div className="flex max-h-56 flex-1 flex-col gap-1 overflow-y-auto">
                   <SortableDay
                     day={day}
                     workoutIds={dayWorkouts.map((workout) => workout.id)}
@@ -396,6 +386,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                       activeDragSourceDay !== null &&
                       activeDragSourceDay !== day
                     }
+                    isEmpty={
+                      dayWorkouts.length === 0 && dayActivities.length === 0
+                    }
+                    isDragActive={activeId !== null}
                   >
                     {dayWorkouts.map((workout) => (
                       <SortableWorkoutCard key={workout.id} id={workout.id}>
@@ -414,34 +408,36 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                         />
                       </SortableWorkoutCard>
                     ))}
-                    {dayActivities.map((activity) => (
-                      <DraggableActivityCard
-                        key={activity.id}
-                        activityId={activity.id}
-                      >
-                        <WorkoutCard
-                          kind="activity"
-                          sport={activity.sport}
-                          title={activity.title}
-                          distance={activity.distance}
-                          duration={activity.duration}
-                          pace={activity.pace ?? null}
-                          onClick={() => setViewingActivity(activity)}
-                        />
-                      </DraggableActivityCard>
-                    ))}
                   </SortableDay>
+                  {dayActivities.map((activity) => (
+                    <DraggableActivityCard
+                      key={activity.id}
+                      activityId={activity.id}
+                    >
+                      <WorkoutCard
+                        kind="activity"
+                        sport={activity.sport}
+                        title={activity.title}
+                        distance={activity.distance}
+                        duration={activity.duration}
+                        pace={activity.pace ?? null}
+                        onClick={() => setViewingActivity(activity)}
+                      />
+                    </DraggableActivityCard>
+                  ))}
                 </div>
 
-                {/* Add workout button */}
+                {/* Add workout button — icon-only, expands on hover */}
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleOpenDialog(day)}
-                  className="border-line bg-bg-soft hover:bg-bg-soft rounded-full px-2.5 text-xs transition-transform hover:scale-105"
+                  className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-800 ease-out hover:w-auto hover:px-2 active:scale-105"
                 >
-                  <Plus className="h-3 w-3" />
-                  Add workout
+                  <Plus className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
+                  <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover:ml-0.5 group-hover:max-w-24 group-hover:opacity-100">
+                    Add workout
+                  </span>
                 </Button>
               </div>
             );

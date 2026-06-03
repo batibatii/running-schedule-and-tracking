@@ -198,12 +198,13 @@ export default function LoginForm() {
 
               <p className="text-ink-soft mt-1 text-center text-[12px]">
                 Wrong email?{" "}
-                <button
+                <Button
+                  variant="link"
                   onClick={handleBackToLogin}
-                  className="border-foreground text-foreground cursor-pointer border-b bg-transparent p-0 font-medium"
+                  className="text-foreground h-auto p-0 font-medium underline underline-offset-2"
                 >
                   Start over
-                </button>
+                </Button>
               </p>
             </>
           ) : (
@@ -280,12 +281,13 @@ export default function LoginForm() {
                 {mode === "login"
                   ? "New to Grind&Track? "
                   : "Already have an account? "}
-                <button
+                <Button
+                  variant="link"
                   onClick={toggleMode}
-                  className="border-foreground text-foreground cursor-pointer border-b bg-transparent p-0 font-medium"
+                  className="text-foreground h-auto p-0 font-medium underline underline-offset-2"
                 >
                   {mode === "login" ? "Create an account" : "Sign in"}
-                </button>
+                </Button>
               </p>
             </>
           )}
