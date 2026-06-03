@@ -20,7 +20,7 @@ interface InsertionIndicatorProps {
 function InsertionIndicator({ day, index }: InsertionIndicatorProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `gap-${day}-${index}`,
-    data: { type: "day", day },
+    data: { type: "day", day, index },
   });
 
   return (
@@ -44,14 +44,14 @@ function InsertionIndicator({ day, index }: InsertionIndicatorProps) {
 interface SortableDayProps {
   day: DayOfWeek;
   workoutIds: string[];
-  isDragActive: boolean;
+  showInsertionSlots: boolean;
   children: React.ReactNode;
 }
 
 export function SortableDay({
   day,
   workoutIds,
-  isDragActive,
+  showInsertionSlots,
   children,
 }: SortableDayProps) {
   const hasWorkouts = workoutIds.length > 0;
@@ -62,7 +62,12 @@ export function SortableDay({
     data: { type: "day", day },
   });
 
-  if (!hasWorkouts) {
+  // First N children are sortable workouts, the rest are activities (always at bottom)
+  const childArray = React.Children.toArray(children);
+  const workoutChildren = childArray.slice(0, workoutIds.length);
+  const activityChildren = childArray.slice(workoutIds.length);
+
+  if (!hasWorkouts && activityChildren.length === 0) {
     return (
       <SortableContext
         items={workoutIds}
@@ -82,25 +87,23 @@ export function SortableDay({
     );
   }
 
-  // Day with workouts — interleave insertion indicators between cards
-  const childArray = React.Children.toArray(children);
-
   return (
     <SortableContext items={workoutIds} strategy={verticalListSortingStrategy}>
       <div ref={setDayRef} className="flex flex-1 flex-col gap-1">
-        {isDragActive ? (
+        {showInsertionSlots ? (
           <>
-            {childArray.map((child, childIndex) => (
+            {workoutChildren.map((child, childIndex) => (
               <React.Fragment key={childIndex}>
                 <InsertionIndicator day={day} index={childIndex} />
                 {child}
               </React.Fragment>
             ))}
-            <InsertionIndicator day={day} index={childArray.length} />
+            <InsertionIndicator day={day} index={workoutChildren.length} />
           </>
         ) : (
-          childArray
+          workoutChildren
         )}
+        {activityChildren}
       </div>
     </SortableContext>
   );

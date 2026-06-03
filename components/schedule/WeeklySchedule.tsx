@@ -205,6 +205,13 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
 
   const displayWorkouts = getDisplayWorkouts();
 
+  // Determine which day the currently dragged workout belongs to
+  const activeDragSourceDay =
+    activeId && activeDragType === "workout"
+      ? (displayWorkouts.find((workout) => workout.id === activeId)
+          ?.dayOfWeek ?? null)
+      : null;
+
   const renderDragOverlay = () => {
     if (!activeId) return null;
 
@@ -385,7 +392,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                   <SortableDay
                     day={day}
                     workoutIds={dayWorkouts.map((workout) => workout.id)}
-                    isDragActive={activeId !== null}
+                    showInsertionSlots={
+                      activeDragSourceDay !== null &&
+                      activeDragSourceDay !== day
+                    }
                   >
                     {dayWorkouts.map((workout) => (
                       <SortableWorkoutCard key={workout.id} id={workout.id}>

@@ -9,6 +9,7 @@ import {
   setWorkoutManualStatus,
   resetWorkoutToPlanned,
   reorderWorkoutsInDay,
+  moveWorkoutToDay,
 } from "@/lib/dal/workout";
 import { getUnmatchedActivitiesForWeek } from "@/lib/dal/activities";
 import { getDayOfWeek } from "@/lib/utils/date";
@@ -183,6 +184,27 @@ export async function deleteWorkoutAction(workoutId: string) {
     await deleteWorkout(workoutId, user.id);
   } catch (error) {
     console.error("[deleteWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
+}
+
+export async function moveWorkoutToDayAction(
+  workoutId: string,
+  newDay: DayOfWeek,
+  insertAtIndex: number,
+  weekStartDate: string,
+) {
+  try {
+    const user = await requireAuth();
+    await moveWorkoutToDay(
+      workoutId,
+      user.id,
+      newDay,
+      weekStartDate,
+      insertAtIndex,
+    );
+  } catch (error) {
+    console.error("[moveWorkoutToDayAction]", extractErrorMessage(error));
     throw error;
   }
 }

@@ -104,12 +104,44 @@ export async function deleteWorkout(workoutId: string, userId: string) {
 /**
  * Batch-update sortOrder for all workouts in a day based on the provided
  * ordered array of workout IDs. Each ID gets sortOrder = its array index.
+ * Validates that all IDs belong to the same user, day, and week.
  */
 export async function reorderWorkoutsInDay(
   userId: string,
   orderedIds: string[],
 ) {
+  if (orderedIds.length === 0) return;
+
   await db.transaction(async (transaction) => {
+    // Validate all IDs belong to the same user + day + week
+    const targetWorkouts = await transaction
+      .select({
+        id: weeklyWorkouts.id,
+        dayOfWeek: weeklyWorkouts.dayOfWeek,
+        weekStartDate: weeklyWorkouts.weekStartDate,
+      })
+      .from(weeklyWorkouts)
+      .where(
+        and(
+          eq(weeklyWorkouts.userId, userId),
+          inArray(weeklyWorkouts.id, orderedIds),
+        ),
+      );
+
+    if (targetWorkouts.length !== orderedIds.length) {
+      throw new Error("Some workout IDs do not belong to this user");
+    }
+
+    const uniqueDays = new Set(
+      targetWorkouts.map((workout) => workout.dayOfWeek),
+    );
+    const uniqueWeeks = new Set(
+      targetWorkouts.map((workout) => workout.weekStartDate),
+    );
+    if (uniqueDays.size > 1 || uniqueWeeks.size > 1) {
+      throw new Error("Cannot reorder workouts across different days or weeks");
+    }
+
     for (let i = 0; i < orderedIds.length; i++) {
       await transaction
         .update(weeklyWorkouts)
@@ -119,6 +151,68 @@ export async function reorderWorkoutsInDay(
             eq(weeklyWorkouts.id, orderedIds[i]),
             eq(weeklyWorkouts.userId, userId),
           ),
+        );
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Move workout to a different day at a specific position
+// ---------------------------------------------------------------------------
+
+/**
+ * Move a workout to a new day and insert it at the given index among
+ * that day's existing workouts. All sort orders in the target day are
+ * recalculated within a single transaction.
+ */
+export async function moveWorkoutToDay(
+  workoutId: string,
+  userId: string,
+  newDay: string,
+  weekStartDate: string,
+  insertAtIndex: number,
+) {
+  await db.transaction(async (transaction) => {
+    // 1. Move the workout to the target day
+    await transaction
+      .update(weeklyWorkouts)
+      .set({ dayOfWeek: newDay, updatedAt: new Date() })
+      .where(
+        and(
+          eq(weeklyWorkouts.id, workoutId),
+          eq(weeklyWorkouts.userId, userId),
+        ),
+      );
+
+    // 2. Fetch all workouts now in the target day, ordered
+    const dayWorkouts = await transaction
+      .select({ id: weeklyWorkouts.id })
+      .from(weeklyWorkouts)
+      .where(
+        and(
+          eq(weeklyWorkouts.userId, userId),
+          eq(weeklyWorkouts.dayOfWeek, newDay),
+          eq(weeklyWorkouts.weekStartDate, weekStartDate),
+        ),
+      )
+      .orderBy(asc(weeklyWorkouts.sortOrder), asc(weeklyWorkouts.createdAt));
+
+    // 3. Remove the moved workout, then re-insert at desired index
+    const ids = dayWorkouts.map((workout) => workout.id);
+    const currentPos = ids.indexOf(workoutId);
+    if (currentPos !== -1) {
+      ids.splice(currentPos, 1);
+    }
+    const clampedIndex = Math.min(insertAtIndex, ids.length);
+    ids.splice(clampedIndex, 0, workoutId);
+
+    // 4. Batch-update sort orders
+    for (let i = 0; i < ids.length; i++) {
+      await transaction
+        .update(weeklyWorkouts)
+        .set({ sortOrder: i, updatedAt: new Date() })
+        .where(
+          and(eq(weeklyWorkouts.id, ids[i]), eq(weeklyWorkouts.userId, userId)),
         );
     }
   });
