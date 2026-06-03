@@ -8,6 +8,8 @@ import {
   deleteWorkout,
   setWorkoutManualStatus,
   resetWorkoutToPlanned,
+  reorderWorkoutsInDay,
+  moveWorkoutToDay,
 } from "@/lib/dal/workout";
 import { getUnmatchedActivitiesForWeek } from "@/lib/dal/activities";
 import { getDayOfWeek } from "@/lib/utils/date";
@@ -58,6 +60,7 @@ export async function fetchScheduleItemsAction(
       title: workout.title ?? undefined,
       notes: workout.notes ?? undefined,
       completed: workout.completed,
+      sortOrder: workout.sortOrder,
       syncStatus: (workout.syncStatus as SyncStatus) ?? null,
       linkedActivityId: workout.linkedActivityId ?? undefined,
       actualDistance: workout.actualDistance
@@ -181,6 +184,37 @@ export async function deleteWorkoutAction(workoutId: string) {
     await deleteWorkout(workoutId, user.id);
   } catch (error) {
     console.error("[deleteWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
+}
+
+export async function moveWorkoutToDayAction(
+  workoutId: string,
+  newDay: DayOfWeek,
+  insertAtIndex: number,
+  weekStartDate: string,
+) {
+  try {
+    const user = await requireAuth();
+    await moveWorkoutToDay(
+      workoutId,
+      user.id,
+      newDay,
+      weekStartDate,
+      insertAtIndex,
+    );
+  } catch (error) {
+    console.error("[moveWorkoutToDayAction]", extractErrorMessage(error));
+    throw error;
+  }
+}
+
+export async function reorderWorkoutsAction(orderedIds: string[]) {
+  try {
+    const user = await requireAuth();
+    await reorderWorkoutsInDay(user.id, orderedIds);
+  } catch (error) {
+    console.error("[reorderWorkoutsAction]", extractErrorMessage(error));
     throw error;
   }
 }

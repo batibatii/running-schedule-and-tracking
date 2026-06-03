@@ -24,11 +24,14 @@ import {
 } from "@/lib/utils/workoutLabels";
 import { toast } from "sonner";
 import { withToastError } from "@/lib/utils/errorClient";
+import { arrayMove } from "@dnd-kit/sortable";
 import {
   createWorkoutAction,
   updateWorkoutDayAction,
   updateWorkoutFieldAction,
   deleteWorkoutAction,
+  reorderWorkoutsAction,
+  moveWorkoutToDayAction,
 } from "@/app/actions/workout";
 import { PartialWorkoutUpdate } from "@/types/workoutValidation";
 
@@ -154,9 +157,9 @@ export function useDragDropManager({
     null,
   );
   const [isOverTrash, setIsOverTrash] = useState(false);
-  const [pendingChanges, setPendingChanges] = useState<Map<string, DayOfWeek>>(
-    new Map(),
-  );
+  const [pendingChanges, setPendingChanges] = useState<
+    Map<string, { day: DayOfWeek; insertIndex?: number }>
+  >(new Map());
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     setIsOverTrash(event.over?.data.current?.type === "trash");
@@ -607,10 +610,42 @@ export function useDragDropManager({
         return;
       }
 
-      // ── workout → day (move to different day) ──
+      // ── workout → workout (same-day reorder via sortable) ──
+      if (sourceType === "workout" && targetType === "workout") {
+        const activeWorkoutId = active.data.current?.workoutId as string;
+        const overWorkoutId = over.data.current?.workoutId as string;
+        if (activeWorkoutId === overWorkoutId) return;
+
+        const activeWorkout = workouts?.find((w) => w.id === activeWorkoutId);
+        const overWorkout = workouts?.find((w) => w.id === overWorkoutId);
+        if (!activeWorkout || !overWorkout) return;
+
+        // Only reorder within same day
+        if (activeWorkout.dayOfWeek !== overWorkout.dayOfWeek) return;
+
+        const dayWorkouts = (workouts ?? [])
+          .filter((w) => w.dayOfWeek === activeWorkout.dayOfWeek)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        const oldIndex = dayWorkouts.findIndex((w) => w.id === activeWorkoutId);
+        const newIndex = dayWorkouts.findIndex((w) => w.id === overWorkoutId);
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+        const reordered = arrayMove(dayWorkouts, oldIndex, newIndex);
+        const orderedIds = reordered.map((w) => w.id);
+
+        await withToastError(
+          () => reorderWorkoutsAction(orderedIds),
+          "Failed to reorder workouts",
+        );
+        refreshWorkouts();
+        return;
+      }
+
+      // ── workout → day (move to different day or drop on insertion slot) ──
       if (sourceType === "workout" && targetType === "day") {
         const workoutId = active.data.current?.workoutId as string;
         const newDay = over.data.current?.day as DayOfWeek;
+        const insertIndex = over.data.current?.index as number | undefined;
         const workout = workouts?.find((w) => w.id === workoutId);
 
         if (!workout) return;
@@ -626,7 +661,7 @@ export function useDragDropManager({
 
         setPendingChanges((prev) => {
           const next = new Map(prev);
-          next.set(workoutId, newDay);
+          next.set(workoutId, { day: newDay, insertIndex });
           return next;
         });
         return;
@@ -718,8 +753,15 @@ export function useDragDropManager({
     const results = await withToastError(
       () =>
         Promise.all(
-          entries.map(([workoutId, newDay]) =>
-            updateWorkoutDayAction(workoutId, newDay),
+          entries.map(([workoutId, { day, insertIndex }]) =>
+            insertIndex !== undefined
+              ? moveWorkoutToDayAction(
+                  workoutId,
+                  day,
+                  insertIndex,
+                  weekStartDateISO,
+                )
+              : updateWorkoutDayAction(workoutId, day),
           ),
         ),
       `Failed to save ${entries.length} pending changes`,
@@ -727,7 +769,7 @@ export function useDragDropManager({
     if (!results) return;
     setPendingChanges(new Map());
     refreshWorkouts();
-  }, [pendingChanges, refreshWorkouts]);
+  }, [pendingChanges, weekStartDateISO, refreshWorkouts]);
 
   const cancelPendingChanges = useCallback(() => {
     setPendingChanges(new Map());
@@ -737,9 +779,9 @@ export function useDragDropManager({
     if (!workouts) return [];
 
     return workouts.map((workout) => {
-      const pendingDay = pendingChanges.get(workout.id);
-      if (pendingDay) {
-        return { ...workout, dayOfWeek: pendingDay };
+      const pending = pendingChanges.get(workout.id);
+      if (pending) {
+        return { ...workout, dayOfWeek: pending.day };
       }
       return workout;
     });

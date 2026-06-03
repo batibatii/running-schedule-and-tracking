@@ -21,6 +21,7 @@ export interface ScheduleWorkout {
   notes?: string;
 
   completed: boolean;
+  sortOrder: number;
   syncStatus: SyncStatus;
 
   linkedActivityId?: string;

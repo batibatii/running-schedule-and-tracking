@@ -10,7 +10,7 @@ import {
   formatDateToISO,
   getDayName,
 } from "@/lib/utils/date";
-import { DayOfWeek, Workout } from "@/types/workout";
+import { DAYS_OF_WEEK, DayOfWeek, Workout } from "@/types/workout";
 import type {
   ScheduleItem,
   ScheduleWorkout,
@@ -20,8 +20,8 @@ import { AddWorkoutDialog } from "./AddWorkoutDialog";
 import { WorkoutCard } from "./WorkoutCard";
 import { ActivityDetailDialog } from "./ActivityDetailDialog";
 import { StatsStrip } from "./StatsStrip";
-import { DroppableDay } from "./DroppableDay";
-import { DroppableWorkoutCard } from "./DroppableWorkoutCard";
+import { SortableDay } from "./SortableDay";
+import { SortableWorkoutCard } from "./SortableWorkoutCard";
 import { DraggableActivityCard } from "./DraggableActivityCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
 import { PillChip } from "@/components/playground/PillChip";
@@ -49,16 +49,6 @@ import {
   PointerSensor,
   pointerWithin,
 } from "@dnd-kit/core";
-
-const DAYS_OF_WEEK: DayOfWeek[] = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-];
 
 interface WeeklyScheduleProps {
   syncTrigger?: number;
@@ -204,6 +194,13 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   };
 
   const displayWorkouts = getDisplayWorkouts();
+
+  // Determine which day the currently dragged workout belongs to
+  const activeDragSourceDay =
+    activeId && activeDragType === "workout"
+      ? (displayWorkouts.find((workout) => workout.id === activeId)
+          ?.dayOfWeek ?? null)
+      : null;
 
   const renderDragOverlay = () => {
     if (!activeId) return null;
@@ -380,67 +377,67 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                   )}
                 </div>
 
-                {/* Planned workouts (draggable) + standalone activities */}
-                <div className="flex max-h-56 flex-1 flex-col overflow-y-auto">
-                  <DroppableDay day={day}>
-                    <div className="flex flex-1 flex-col gap-2">
-                      {dayWorkouts.length > 0 || dayActivities.length > 0 ? (
-                        <>
-                          {dayWorkouts.map((workout) => (
-                            <DroppableWorkoutCard
-                              key={workout.id}
-                              id={workout.id}
-                            >
-                              <WorkoutCard
-                                kind="planned"
-                                sport={workout.sport}
-                                workoutType={workout.workoutType}
-                                heartRateZone={workout.heartRateZone}
-                                distance={workout.distance ?? 0}
-                                duration={workout.duration}
-                                completed={workout.completed}
-                                syncStatus={workout.syncStatus}
-                                actualDistance={workout.actualDistance}
-                                actualDuration={workout.actualDuration}
-                                onClick={() => handleOpenDialog(day, workout)}
-                              />
-                            </DroppableWorkoutCard>
-                          ))}
-                          {dayActivities.map((activity) => (
-                            <DraggableActivityCard
-                              key={activity.id}
-                              activityId={activity.id}
-                            >
-                              <WorkoutCard
-                                kind="activity"
-                                sport={activity.sport}
-                                title={activity.title}
-                                distance={activity.distance}
-                                duration={activity.duration}
-                                pace={activity.pace ?? null}
-                                onClick={() => setViewingActivity(activity)}
-                              />
-                            </DraggableActivityCard>
-                          ))}
-                        </>
-                      ) : (
-                        <div className="border-line-strong text-ink-faint flex min-h-15 flex-1 items-center justify-center rounded-2xl border border-dashed text-[11px]">
-                          Drop here
-                        </div>
-                      )}
-                    </div>
-                  </DroppableDay>
+                {/* Planned workouts (sortable) + standalone activities */}
+                <div className="flex max-h-56 flex-1 flex-col gap-1 overflow-y-auto">
+                  <SortableDay
+                    day={day}
+                    workoutIds={dayWorkouts.map((workout) => workout.id)}
+                    showInsertionSlots={
+                      activeDragSourceDay !== null &&
+                      activeDragSourceDay !== day
+                    }
+                    isEmpty={
+                      dayWorkouts.length === 0 && dayActivities.length === 0
+                    }
+                    isDragActive={activeId !== null}
+                  >
+                    {dayWorkouts.map((workout) => (
+                      <SortableWorkoutCard key={workout.id} id={workout.id}>
+                        <WorkoutCard
+                          kind="planned"
+                          sport={workout.sport}
+                          workoutType={workout.workoutType}
+                          heartRateZone={workout.heartRateZone}
+                          distance={workout.distance ?? 0}
+                          duration={workout.duration}
+                          completed={workout.completed}
+                          syncStatus={workout.syncStatus}
+                          actualDistance={workout.actualDistance}
+                          actualDuration={workout.actualDuration}
+                          onClick={() => handleOpenDialog(day, workout)}
+                        />
+                      </SortableWorkoutCard>
+                    ))}
+                  </SortableDay>
+                  {dayActivities.map((activity) => (
+                    <DraggableActivityCard
+                      key={activity.id}
+                      activityId={activity.id}
+                    >
+                      <WorkoutCard
+                        kind="activity"
+                        sport={activity.sport}
+                        title={activity.title}
+                        distance={activity.distance}
+                        duration={activity.duration}
+                        pace={activity.pace ?? null}
+                        onClick={() => setViewingActivity(activity)}
+                      />
+                    </DraggableActivityCard>
+                  ))}
                 </div>
 
-                {/* Add workout button */}
+                {/* Add workout button — icon-only, expands on hover */}
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleOpenDialog(day)}
-                  className="border-line bg-bg-soft hover:bg-bg-soft rounded-full px-2.5 text-xs transition-transform hover:scale-105"
+                  className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-800 ease-out hover:w-auto hover:px-2 active:scale-105"
                 >
-                  <Plus className="h-3 w-3" />
-                  Add workout
+                  <Plus className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
+                  <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover:ml-0.5 group-hover:max-w-24 group-hover:opacity-100">
+                    Add workout
+                  </span>
                 </Button>
               </div>
             );

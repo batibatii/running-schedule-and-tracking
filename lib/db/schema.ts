@@ -152,6 +152,8 @@ export const weeklyWorkouts = pgTable("weekly_workouts", {
 
   completed: boolean("completed").default(false).notNull(),
 
+  sortOrder: integer("sort_order").default(0).notNull(),
+
   // Strava activity linking — populated by the matching algorithm after sync
   linkedActivityId: uuid("linked_activity_id").references(() => activities.id, {
     onDelete: "set null",
