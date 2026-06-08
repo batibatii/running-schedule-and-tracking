@@ -33,11 +33,7 @@ export async function fetchWeatherForecast(
 
   const dateRange = buildDateRange(normalizedForecast.daily);
 
-  return mapOpenWeatherToForecast(
-    normalizedForecast,
-    locationName,
-    dateRange,
-  );
+  return mapOpenWeatherToForecast(normalizedForecast, locationName, dateRange);
 }
 
 async function reverseGeocode(
@@ -69,9 +65,7 @@ async function reverseGeocode(
   return `${latitude.toFixed(1)}, ${longitude.toFixed(1)}`;
 }
 
-function buildDateRange(
-  daily: Array<{ unixTimestamp: number }>,
-): string {
+function buildDateRange(daily: Array<{ unixTimestamp: number }>): string {
   if (daily.length === 0) return "";
 
   const formatter = new Intl.DateTimeFormat("en-US", {

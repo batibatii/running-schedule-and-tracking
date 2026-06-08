@@ -4,7 +4,11 @@ import {
   CloudGlyph,
   Droplet,
 } from "@/components/icons/WeatherIcons";
-import { ICON_TINT, type WeatherForecast, type DailyForecast } from "@/lib/weather/types";
+import {
+  ICON_TINT,
+  type WeatherForecast,
+  type DailyForecast,
+} from "@/lib/weather/types";
 
 interface WeatherContentProps {
   forecast: WeatherForecast;
@@ -36,37 +40,39 @@ export function WeatherContent({ forecast }: WeatherContentProps) {
           {/* Temperature */}
           <div
             className="font-mono leading-none tracking-[-0.02em]"
-            style={{ fontSize: 33, fontWeight: 500, color: "var(--ink-strong)" }}
+            style={{
+              fontSize: 33,
+              fontWeight: 500,
+              color: "var(--ink-strong)",
+            }}
           >
             {Math.round(current.temp)}°
-            <span
-              className="text-ink-faint"
-              style={{ fontSize: 17 }}
-            >
+            <span className="text-ink-faint" style={{ fontSize: 17 }}>
               C
             </span>
           </div>
 
           {/* RealFeel */}
-          <div className="ml-auto text-right font-mono text-[11px] text-ink-soft">
+          <div className="text-ink-soft ml-auto text-right font-mono text-[11px]">
             RealFeel
             <br />
-            <span className="text-[14px]" style={{ color: "var(--ink-strong)" }}>
+            <span
+              className="text-[14px]"
+              style={{ color: "var(--ink-strong)" }}
+            >
               {Math.round(current.feelsLike)}°
             </span>
           </div>
         </div>
 
         {/* Caption */}
-        <div
-          className="font-display text-[16px] italic text-ink-soft"
-        >
+        <div className="font-display text-ink-soft text-[16px] italic">
           {current.caption}
         </div>
       </div>
 
       {/* ── 7-day strip ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-7 border-t border-line pt-2.75">
+      <div className="border-line grid grid-cols-7 border-t pt-2.75">
         {daily.map((day, index) => (
           <WeatherDayColumn
             key={index}
@@ -103,15 +109,12 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
   return (
     <div className="flex flex-col items-center gap-1.25">
       {/* Day letter */}
-      <span className="font-mono text-[10.5px] font-semibold text-ink-faint">
+      <span className="text-ink-faint font-mono text-[10.5px] font-semibold">
         {day.dayLetter}
       </span>
 
       {/* Weather icon */}
-      <span
-        className="inline-flex"
-        style={{ color: ICON_TINT[day.icon] }}
-      >
+      <span className="inline-flex" style={{ color: ICON_TINT[day.icon] }}>
         <DayGlyph size={18} />
       </span>
 
@@ -125,7 +128,7 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
 
       {/* Temperature bar */}
       <div
-        className="relative rounded-full bg-line"
+        className="bg-line relative rounded-full"
         style={{ width: 5, height: TEMP_BAR_TRACK_HEIGHT }}
       >
         <div
@@ -140,7 +143,7 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
       </div>
 
       {/* Low temp */}
-      <span className="font-mono text-[11px] text-ink-faint">
+      <span className="text-ink-faint font-mono text-[11px]">
         {Math.round(day.lo)}°
       </span>
 
@@ -152,10 +155,7 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
           fontWeight: isWet ? 600 : 400,
         }}
       >
-        <Droplet
-          size={8}
-          color={isWet ? "#3E7FB0" : "var(--ink-faint)"}
-        />
+        <Droplet size={8} color={isWet ? "#3E7FB0" : "var(--ink-faint)"} />
         <span className="font-mono">{Math.round(day.precipitation)}%</span>
       </span>
     </div>

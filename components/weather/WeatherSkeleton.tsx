@@ -9,7 +9,7 @@ export function WeatherSkeleton() {
 
       <div className="wx-shimmer h-4 w-[70%] rounded-full" />
 
-      <div className="grid grid-cols-7 gap-2 border-t border-line pt-3.5">
+      <div className="border-line grid grid-cols-7 gap-2 border-t pt-3.5">
         {Array.from({ length: 7 }).map((_, index) => (
           <div key={index} className="wx-shimmer h-27.5 rounded-md" />
         ))}

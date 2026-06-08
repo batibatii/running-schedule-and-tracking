@@ -108,21 +108,19 @@ export function mapOpenWeatherToForecast(
       "",
   };
 
-  const daily: DailyForecast[] = response.daily
-    .slice(0, 7)
-    .map((day) => {
-      const date = new Date(day.unixTimestamp * 1000);
-      const dayIndex = date.getDay(); // 0 = Sunday
-      return {
-        dayLetter: DAY_LETTERS[dayIndex],
-        icon: mapIcon(day.weather[0]?.icon ?? "01d"),
-        hi: Math.round(day.temp.max),
-        lo: Math.round(day.temp.min),
-        precipitation: Math.round(day.pop * 100),
-        condition: day.weather[0]?.description ?? "",
-        wind: Math.round(day.wind_speed * 3.6), // m/s → km/h
-      };
-    });
+  const daily: DailyForecast[] = response.daily.slice(0, 7).map((day) => {
+    const date = new Date(day.unixTimestamp * 1000);
+    const dayIndex = date.getDay(); // 0 = Sunday
+    return {
+      dayLetter: DAY_LETTERS[dayIndex],
+      icon: mapIcon(day.weather[0]?.icon ?? "01d"),
+      hi: Math.round(day.temp.max),
+      lo: Math.round(day.temp.min),
+      precipitation: Math.round(day.pop * 100),
+      condition: day.weather[0]?.description ?? "",
+      wind: Math.round(day.wind_speed * 3.6), // m/s → km/h
+    };
+  });
 
   return { location, dateRange, current, daily };
 }
