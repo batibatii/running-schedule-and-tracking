@@ -1,85 +1,75 @@
 import type { WeatherForecast } from "./types";
-import { normalizeOWMResponse, mapOpenWeatherToForecast } from "./mappers";
+import type { OpenMeteoResponse } from "./mappers";
+import { mapOpenMeteoToForecast } from "./mappers";
 
-const OPENWEATHER_BASE_URL = "https://api.openweathermap.org";
+const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org/reverse";
 
 export async function fetchWeatherForecast(
   latitude: number,
   longitude: number,
 ): Promise<WeatherForecast> {
-  const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENWEATHERMAP_API_KEY is not configured");
-  }
+  const url = new URL(OPEN_METEO_BASE_URL);
+  url.searchParams.set("latitude", String(latitude));
+  url.searchParams.set("longitude", String(longitude));
+  url.searchParams.set(
+    "current",
+    "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",
+  );
+  url.searchParams.set(
+    "daily",
+    "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max",
+  );
+  url.searchParams.set("timezone", "auto");
 
-  const forecastUrl = new URL("/data/3.0/onecall", OPENWEATHER_BASE_URL);
-  forecastUrl.searchParams.set("lat", String(latitude));
-  forecastUrl.searchParams.set("lon", String(longitude));
-  forecastUrl.searchParams.set("appid", apiKey);
-  forecastUrl.searchParams.set("units", "metric");
-  forecastUrl.searchParams.set("exclude", "minutely,hourly,alerts");
-
-  const forecastResponse = await fetch(forecastUrl.toString());
-  if (!forecastResponse.ok) {
+  const response = await fetch(url.toString());
+  if (!response.ok) {
     throw new Error(
-      `OpenWeatherMap API error: ${forecastResponse.status} ${forecastResponse.statusText}`,
+      `Open-Meteo API error: ${response.status} ${response.statusText}`,
     );
   }
 
-  const rawForecast = await forecastResponse.json();
-  const normalizedForecast = normalizeOWMResponse(rawForecast);
+  const data: OpenMeteoResponse = await response.json();
+  const location = await reverseGeocode(latitude, longitude);
 
-  const locationName = await reverseGeocode(latitude, longitude, apiKey);
-
-  const dateRange = buildDateRange(normalizedForecast.daily);
-
-  return mapOpenWeatherToForecast(normalizedForecast, locationName, dateRange);
+  return mapOpenMeteoToForecast(data, location);
 }
 
+/**
+ * Reverse geocode using OpenStreetMap Nominatim (free, no key).
+ * Falls back to raw coordinates on failure.
+ */
 async function reverseGeocode(
   latitude: number,
   longitude: number,
-  apiKey: string,
 ): Promise<string> {
   try {
-    const geocodeUrl = new URL("/geo/1.0/reverse", OPENWEATHER_BASE_URL);
-    geocodeUrl.searchParams.set("lat", String(latitude));
-    geocodeUrl.searchParams.set("lon", String(longitude));
-    geocodeUrl.searchParams.set("limit", "1");
-    geocodeUrl.searchParams.set("appid", apiKey);
+    const url = new URL(NOMINATIM_BASE_URL);
+    url.searchParams.set("lat", String(latitude));
+    url.searchParams.set("lon", String(longitude));
+    url.searchParams.set("format", "json");
+    url.searchParams.set("zoom", "10"); // city-level detail
 
-    const geocodeResponse = await fetch(geocodeUrl.toString());
-    if (!geocodeResponse.ok) {
+    const response = await fetch(url.toString(), {
+      headers: { "User-Agent": "GrindTrack/1.0" }, // Nominatim requires User-Agent
+    });
+
+    if (!response.ok) {
       return `${latitude.toFixed(1)}, ${longitude.toFixed(1)}`;
     }
 
-    const geocodeData = await geocodeResponse.json();
-    if (geocodeData.length > 0) {
-      const { name, country } = geocodeData[0];
-      return `${name}, ${country}`;
-    }
+    const data = await response.json();
+    const city =
+      data.address?.city ??
+      data.address?.town ??
+      data.address?.village ??
+      data.address?.county;
+    const country = data.address?.country_code?.toUpperCase();
+
+    if (city && country) return `${city}, ${country}`;
   } catch {
     // Silently fall back — location name is cosmetic
   }
 
   return `${latitude.toFixed(1)}, ${longitude.toFixed(1)}`;
-}
-
-function buildDateRange(daily: Array<{ unixTimestamp: number }>): string {
-  if (daily.length === 0) return "";
-
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  const yearFormatter = new Intl.DateTimeFormat("en-US", { year: "numeric" });
-
-  const firstDate = new Date(daily[0].unixTimestamp * 1000);
-  const lastDate = new Date(daily[daily.length - 1].unixTimestamp * 1000);
-
-  const start = formatter.format(firstDate);
-  const end = formatter.format(lastDate);
-  const year = yearFormatter.format(lastDate);
-
-  return `${start} – ${end}, ${year}`;
 }

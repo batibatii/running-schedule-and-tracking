@@ -6,121 +6,113 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// OpenWeatherMap One Call API 3.0 response types (subset we use)
+// Open-Meteo API response types (subset we use)
 // ---------------------------------------------------------------------------
 
-interface OWMWeatherEntry {
-  id: number;
-  main: string;
-  description: string;
-  icon: string;
+export interface OpenMeteoCurrent {
+  temperature_2m: number;
+  apparent_temperature: number;
+  weather_code: number;
+  wind_speed_10m: number;
 }
 
-interface OWMCurrent {
-  temp: number;
-  feels_like: number;
-  wind_speed: number;
-  weather: OWMWeatherEntry[];
+export interface OpenMeteoDaily {
+  time: string[]; // ["2026-06-08", "2026-06-09", ...]
+  weather_code: number[];
+  temperature_2m_max: number[];
+  temperature_2m_min: number[];
+  precipitation_probability_max: number[];
+  wind_speed_10m_max: number[];
 }
 
-interface OWMDaily {
-  /** Unix timestamp (seconds) for the forecasted day. OWM field name: `dt`. */
-  unixTimestamp: number;
-  temp: { min: number; max: number };
-  /** Probability of precipitation, 0–1. */
-  pop: number;
-  wind_speed: number;
-  summary?: string;
-  weather: OWMWeatherEntry[];
-}
-
-export interface OWMOnecallResponse {
+export interface OpenMeteoResponse {
   latitude: number;
   longitude: number;
-  current: OWMCurrent;
-  daily: OWMDaily[];
+  current: OpenMeteoCurrent;
+  daily: OpenMeteoDaily;
 }
 
 const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 
 /**
- * Map an OpenWeatherMap icon code to our WeatherIcon union.
  *
- * OWM icon codes: https://openweathermap.org/weather-conditions
- *   01d/01n = clear sky
- *   02d/02n = few clouds
- *   03d/03n = scattered clouds
- *   04d/04n = broken clouds
- *   09d/09n = shower rain
- *   10d/10n = rain
- *   11d/11n = thunderstorm
- *   13d/13n = snow
- *   50d/50n = mist
+ * WMO codes: https://open-meteo.com/en/docs#weathervariables
+ *   0       = Clear sky
+ *   1–3     = Partly cloudy
+ *   45–48   = Fog
+ *   51–57   = Drizzle
+ *   61–67   = Rain
+ *   71–77   = Snow
+ *   80–82   = Rain showers
+ *   95–99   = Thunderstorm
  */
-function mapIcon(owmIcon: string): WeatherIcon {
-  const code = owmIcon.replace(/[dn]$/, ""); // strip day/night suffix
-  switch (code) {
-    case "01":
-      return "sun";
-    case "02":
-    case "03":
-      return "partly";
-    case "04":
-      return "cloud";
-    case "09":
-    case "10":
-    case "11":
-      return "rain";
-    default:
-      return "cloud"; // snow, mist, etc. → cloud
-  }
+function mapWmoCodeToIcon(code: number): WeatherIcon {
+  if (code === 0) return "sun";
+  if (code <= 3) return "partly";
+  if (code <= 48) return "cloud"; // fog
+  if (code <= 67) return "rain"; // drizzle + rain
+  if (code <= 77) return "cloud"; // snow
+  if (code <= 82) return "rain"; // rain showers
+  return "rain"; // thunderstorm
 }
 
-export function normalizeOWMResponse(raw: {
-  lat: number;
-  lon: number;
-  current: OWMCurrent;
-  daily: Array<Omit<OWMDaily, "unixTimestamp"> & { dt: number }>;
-}): OWMOnecallResponse {
-  return {
-    latitude: raw.lat,
-    longitude: raw.lon,
-    current: raw.current,
-    daily: raw.daily.map(({ dt, ...rest }) => ({
-      ...rest,
-      unixTimestamp: dt,
-    })),
-  };
+function wmoConditionLabel(code: number): string {
+  if (code === 0) return "Clear sky";
+  if (code <= 3) return "Partly cloudy";
+  if (code <= 48) return "Foggy";
+  if (code <= 55) return "Drizzle";
+  if (code <= 57) return "Freezing drizzle";
+  if (code <= 65) return "Rain";
+  if (code <= 67) return "Freezing rain";
+  if (code <= 75) return "Snowfall";
+  if (code <= 77) return "Snow grains";
+  if (code <= 82) return "Rain showers";
+  if (code <= 86) return "Snow showers";
+  if (code === 95) return "Thunderstorm";
+  return "Thunderstorm with hail";
 }
 
-export function mapOpenWeatherToForecast(
-  response: OWMOnecallResponse,
+export function mapOpenMeteoToForecast(
+  response: OpenMeteoResponse,
   location: string,
-  dateRange: string,
 ): WeatherForecast {
   const current: CurrentConditions = {
-    icon: mapIcon(response.current.weather[0]?.icon ?? "01d"),
-    temp: Math.round(response.current.temp),
-    feelsLike: Math.round(response.current.feels_like),
-    caption:
-      response.daily[0]?.summary ??
-      response.current.weather[0]?.description ??
-      "",
+    icon: mapWmoCodeToIcon(response.current.weather_code),
+    temp: Math.round(response.current.temperature_2m),
+    feelsLike: Math.round(response.current.apparent_temperature),
+    caption: wmoConditionLabel(response.current.weather_code),
   };
 
-  const daily: DailyForecast[] = response.daily.slice(0, 7).map((day) => {
-    const date = new Date(day.unixTimestamp * 1000);
-    const dayIndex = date.getDay(); // 0 = Sunday
-    return {
-      dayLetter: DAY_LETTERS[dayIndex],
-      icon: mapIcon(day.weather[0]?.icon ?? "01d"),
-      hi: Math.round(day.temp.max),
-      lo: Math.round(day.temp.min),
-      precipitation: Math.round(day.pop * 100),
-      condition: day.weather[0]?.description ?? "",
-      wind: Math.round(day.wind_speed * 3.6), // m/s → km/h
-    };
+  const daily: DailyForecast[] = response.daily.time
+    .slice(0, 7)
+    .map((dateStr, index) => {
+      const date = new Date(dateStr + "T00:00:00");
+      const dayIndex = date.getDay(); // 0 = Sunday
+      const weatherCode = response.daily.weather_code[index];
+
+      return {
+        dayLetter: DAY_LETTERS[dayIndex],
+        icon: mapWmoCodeToIcon(weatherCode),
+        hi: Math.round(response.daily.temperature_2m_max[index]),
+        lo: Math.round(response.daily.temperature_2m_min[index]),
+        precipitation: response.daily.precipitation_probability_max[index] ?? 0,
+        condition: wmoConditionLabel(weatherCode),
+        wind: Math.round(response.daily.wind_speed_10m_max[index]),
+      };
+    });
+
+  // Build date range string from first and last day
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
   });
+  const yearFormatter = new Intl.DateTimeFormat("en-US", { year: "numeric" });
+  const firstDate = new Date(response.daily.time[0] + "T00:00:00");
+  const lastDate = new Date(
+    response.daily.time[Math.min(6, response.daily.time.length - 1)] +
+      "T00:00:00",
+  );
+  const dateRange = `${formatter.format(firstDate)} – ${formatter.format(lastDate)}, ${yearFormatter.format(lastDate)}`;
 
   return { location, dateRange, current, daily };
 }

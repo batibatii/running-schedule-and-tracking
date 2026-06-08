@@ -1,23 +1,21 @@
-import { NextResponse } from "next/server";
+"use server";
+
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { requireAuth } from "@/lib/auth";
 import { fetchWeatherForecast } from "@/lib/weather/client";
 import { extractErrorMessage } from "@/lib/utils/error";
+import type { ActionResult } from "@/lib/utils/error";
+import type { WeatherForecast } from "@/lib/weather/types";
 
-export async function POST(request: Request) {
+export async function fetchWeatherAction(
+  latitude: number,
+  longitude: number,
+): Promise<ActionResult<WeatherForecast>> {
   await requireAuth();
 
-  const { latitude, longitude } = (await request.json()) as {
-    latitude: number;
-    longitude: number;
-  };
-
   if (typeof latitude !== "number" || typeof longitude !== "number") {
-    return NextResponse.json(
-      { error: "latitude and longitude are required" },
-      { status: 400 },
-    );
+    return { success: false, message: "Latitude and longitude are required" };
   }
 
   try {
@@ -40,12 +38,11 @@ export async function POST(request: Request) {
         `Write a brief caption.`,
     });
 
-    // Replace the OWM description caption with Claude's creative one
     forecast.current.caption = caption.replace(/^["']|["']$/g, "");
 
-    return NextResponse.json(forecast);
+    return { success: true, message: "Weather fetched", data: forecast };
   } catch (error) {
     const message = extractErrorMessage(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return { success: false, message };
   }
 }
