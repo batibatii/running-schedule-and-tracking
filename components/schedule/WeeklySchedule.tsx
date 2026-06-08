@@ -41,6 +41,13 @@ import {
 } from "@/app/actions/workout";
 import { deleteActivityAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
+import { WeatherBadge } from "@/components/weather/WeatherBadge";
+import { WeatherPopover } from "@/components/weather/WeatherPopover";
+import { WeatherPanel } from "@/components/weather/WeatherPanel";
+import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import { WeatherContent } from "@/components/weather/WeatherContent";
+import { useWeatherBounds } from "@/hooks/useWeatherBounds";
+import type { WeatherForecast } from "@/lib/weather/types";
 import {
   DndContext,
   DragOverlay,
@@ -61,6 +68,39 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
   const [viewingActivity, setViewingActivity] =
     useState<StandaloneActivity | null>(null);
+
+  // ── Weather state machine: idle → popover → loading → loaded ──
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherForecast, setWeatherForecast] =
+    useState<WeatherForecast | null>(null);
+
+  const { statsRef, gridRef, bounds: weatherBounds } = useWeatherBounds();
+
+  const handleGenerate = () => {
+    setPopoverOpen(false);
+    setPanelOpen(true);
+    setWeatherLoading(true);
+    setWeatherForecast(null);
+
+    // TODO (Step 12): Replace with real streamUI API call
+    setTimeout(() => {
+      setWeatherForecast(MOCK_FORECAST);
+      setWeatherLoading(false);
+    }, 1500);
+  };
+
+  const handleWeatherRefresh = () => {
+    setWeatherLoading(true);
+    setWeatherForecast(null);
+
+    // TODO (Step 12): Replace with real streamUI API call
+    setTimeout(() => {
+      setWeatherForecast(MOCK_FORECAST);
+      setWeatherLoading(false);
+    }, 1500);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -331,11 +371,13 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
           </div>
         )}
 
-        {/* Stats strip — only planned workouts */}
-        <StatsStrip workouts={displayWorkouts} />
+        {/* Stats strip */}
+        <div ref={statsRef}>
+          <StatsStrip workouts={displayWorkouts} />
+        </div>
 
         {/* 7-day grid */}
-        <div className="grid grid-cols-7 items-start gap-2.5">
+        <div ref={gridRef} className="grid grid-cols-7 items-start gap-2.5">
           {DAYS_OF_WEEK.map((day, index) => {
             const date = weekDates[index];
             const isToday =
@@ -444,6 +486,33 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
           })}
         </div>
 
+        {/* ── Weather forecast (fixed in right gutter) ──────────── */}
+        <WeatherBadge
+          hidden={panelOpen}
+          bounds={weatherBounds}
+          onClick={() => setPopoverOpen((prev) => !prev)}
+        />
+        <WeatherPopover
+          open={popoverOpen}
+          bounds={weatherBounds}
+          onGenerate={handleGenerate}
+          onClose={() => setPopoverOpen(false)}
+        />
+        <WeatherPanel
+          open={panelOpen}
+          loading={weatherLoading}
+          location={weatherForecast?.location ?? "Loading…"}
+          bounds={weatherBounds}
+          onClose={() => setPanelOpen(false)}
+          onRefresh={handleWeatherRefresh}
+        >
+          {weatherLoading || !weatherForecast ? (
+            <WeatherSkeleton />
+          ) : (
+            <WeatherContent forecast={weatherForecast} />
+          )}
+        </WeatherPanel>
+
         {/* Playground + Presets */}
         <PlaygroundArea
           items={items}
@@ -514,3 +583,79 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     </DndContext>
   );
 }
+
+const MOCK_FORECAST: WeatherForecast = {
+  location: "Istanbul, TR",
+  dateRange: "Jun 2 – Jun 8, 2026",
+  current: {
+    icon: "sun",
+    temp: 19,
+    feelsLike: 17,
+    caption: "Breezy Sunday afternoon",
+  },
+  daily: [
+    {
+      dayLetter: "M",
+      icon: "partly",
+      hi: 27,
+      lo: 18,
+      precipitation: 1,
+      condition: "Partly cloudy",
+      wind: 12,
+    },
+    {
+      dayLetter: "T",
+      icon: "sun",
+      hi: 27,
+      lo: 17,
+      precipitation: 0,
+      condition: "Sunny",
+      wind: 8,
+    },
+    {
+      dayLetter: "W",
+      icon: "rain",
+      hi: 22,
+      lo: 14,
+      precipitation: 35,
+      condition: "Light rain",
+      wind: 18,
+    },
+    {
+      dayLetter: "T",
+      icon: "sun",
+      hi: 28,
+      lo: 17,
+      precipitation: 0,
+      condition: "Sunny",
+      wind: 10,
+    },
+    {
+      dayLetter: "F",
+      icon: "partly",
+      hi: 28,
+      lo: 17,
+      precipitation: 0,
+      condition: "Partly cloudy",
+      wind: 9,
+    },
+    {
+      dayLetter: "S",
+      icon: "sun",
+      hi: 28,
+      lo: 17,
+      precipitation: 2,
+      condition: "Sunny",
+      wind: 7,
+    },
+    {
+      dayLetter: "S",
+      icon: "partly",
+      hi: 26,
+      lo: 17,
+      precipitation: 1,
+      condition: "Partly cloudy",
+      wind: 11,
+    },
+  ],
+};

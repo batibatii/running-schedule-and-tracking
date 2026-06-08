@@ -3,22 +3,28 @@
 import { Button } from "@/components/ui/button";
 import { PartlyGlyph, Sparkle } from "@/components/icons/WeatherIcons";
 import { ICON_TINT } from "@/lib/weather/types";
+import type { WeatherBounds } from "@/hooks/useWeatherBounds";
 
 interface WeatherPopoverProps {
   open: boolean;
+  bounds: WeatherBounds | null;
   onGenerate: () => void;
   onClose: () => void;
 }
 
 export function WeatherPopover({
   open,
+  bounds,
   onGenerate,
   onClose,
 }: WeatherPopoverProps) {
+  if (!bounds) return null;
+
   return (
     <div
-      className="fixed top-[38%] right-15 z-41 w-66 origin-right"
+      className="fixed right-15 z-20 w-66 origin-right"
       style={{
+        top: bounds.statsCenter - 80, // roughly center popover on badge
         pointerEvents: open ? "auto" : "none",
         opacity: open ? 1 : 0,
         transform: open
