@@ -1,5 +1,6 @@
 import type { PillFieldType } from "@/types/playground";
 import type { Sport, WorkoutType } from "@/types/workout";
+import type { WeatherIcon } from "@/lib/weather/types";
 
 export const PILL_COLORS: Record<PillFieldType, string> = {
   sport: "bg-[#E5F2FB] text-[#2A5573] border-[#C9DFEF]",
@@ -23,6 +24,14 @@ export const WORKOUT_TYPE_ICON_BACKGROUND: Record<WorkoutType, string> = {
   recovery: "bg-workout-recovery",
   race: "bg-workout-race",
   interval: "bg-workout-interval",
+};
+
+/** Weather icon tint colors for SVG icons */
+export const WEATHER_ICON_TINT: Record<WeatherIcon, string> = {
+  sun: "#E8A23A",
+  partly: "#8FA9C8",
+  rain: "#5B8FB8",
+  cloud: "#8B9AA8",
 };
 
 /** Deep-tone foreground color for italic display workout-type names (Grind&Track DS) */

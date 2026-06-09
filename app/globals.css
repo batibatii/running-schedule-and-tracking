@@ -82,6 +82,9 @@
   --color-workout-race: var(--workout-race);
   --color-workout-interval: var(--workout-interval);
 
+  /* Weather */
+  --color-weather-wet: var(--weather-wet);
+
   /* Workout type foreground (deep-tone for italic display names) */
   --color-workout-easy-fg: var(--workout-easy-fg);
   --color-workout-tempo-fg: var(--workout-tempo-fg);
@@ -123,6 +126,9 @@
   --ink-faint: #a89a8f;
   --line: #efe3d7;
   --line-strong: #e2d2c2;
+
+  /* Weather */
+  --weather-wet: #3e7fb0;
 
   /* Accent palette */
   --peach: #ffd3b6;
@@ -264,6 +270,27 @@
   --sidebar-accent-foreground: #f4efe6;
   --sidebar-border: #3a3540;
   --sidebar-ring: #ff8b83;
+}
+
+/* Weather forecast skeleton shimmer */
+.wx-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--bg-soft) 30%,
+    #fff 50%,
+    var(--bg-soft) 70%
+  );
+  background-size: 220% 100%;
+  animation: wxShimmer 1.3s infinite linear;
+}
+
+@keyframes wxShimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
 }
 
 @layer base {
