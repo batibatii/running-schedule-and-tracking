@@ -106,13 +106,12 @@ export function mapOpenMeteoToForecast(
     month: "short",
     day: "numeric",
   });
-  const yearFormatter = new Intl.DateTimeFormat("en-US", { year: "numeric" });
   const firstDate = new Date(response.daily.time[0] + "T00:00:00");
   const lastDate = new Date(
     response.daily.time[Math.min(6, response.daily.time.length - 1)] +
       "T00:00:00",
   );
-  const dateRange = `${formatter.format(firstDate)} – ${formatter.format(lastDate)}, ${yearFormatter.format(lastDate)}`;
+  const dateRange = `${formatter.format(firstDate)} – ${formatter.format(lastDate)}, ${lastDate.getFullYear()}`;
 
   return { location, dateRange, current, daily };
 }

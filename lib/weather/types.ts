@@ -1,12 +1,5 @@
 export type WeatherIcon = "sun" | "partly" | "rain" | "cloud";
 
-export const ICON_TINT: Record<WeatherIcon, string> = {
-  sun: "#E8A23A",
-  partly: "#8FA9C8",
-  rain: "#5B8FB8",
-  cloud: "#8B9AA8",
-};
-
 export interface CurrentConditions {
   icon: WeatherIcon;
   temp: number; // °C

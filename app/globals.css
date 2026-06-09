@@ -82,6 +82,9 @@
   --color-workout-race: var(--workout-race);
   --color-workout-interval: var(--workout-interval);
 
+  /* Weather */
+  --color-weather-wet: var(--weather-wet);
+
   /* Workout type foreground (deep-tone for italic display names) */
   --color-workout-easy-fg: var(--workout-easy-fg);
   --color-workout-tempo-fg: var(--workout-tempo-fg);
@@ -123,6 +126,9 @@
   --ink-faint: #a89a8f;
   --line: #efe3d7;
   --line-strong: #e2d2c2;
+
+  /* Weather */
+  --weather-wet: #3e7fb0;
 
   /* Accent palette */
   --peach: #ffd3b6;

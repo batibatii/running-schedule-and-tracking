@@ -1,14 +1,13 @@
+"use client";
+
 import {
   WEATHER_GLYPH,
   SunGlyph,
   CloudGlyph,
   Droplet,
 } from "@/components/icons/WeatherIcons";
-import {
-  ICON_TINT,
-  type WeatherForecast,
-  type DailyForecast,
-} from "@/lib/weather/types";
+import type { WeatherForecast, DailyForecast } from "@/lib/weather/types";
+import { WEATHER_ICON_TINT } from "@/lib/constants/ui";
 
 interface WeatherContentProps {
   forecast: WeatherForecast;
@@ -32,7 +31,7 @@ export function WeatherContent({ forecast }: WeatherContentProps) {
           {/* Weather icon */}
           <span
             className="inline-flex shrink-0"
-            style={{ color: ICON_TINT[current.icon] }}
+            style={{ color: WEATHER_ICON_TINT[current.icon] }}
           >
             <CurrentGlyph size={36} />
           </span>
@@ -114,7 +113,10 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
       </span>
 
       {/* Weather icon */}
-      <span className="inline-flex" style={{ color: ICON_TINT[day.icon] }}>
+      <span
+        className="inline-flex"
+        style={{ color: WEATHER_ICON_TINT[day.icon] }}
+      >
         <DayGlyph size={18} />
       </span>
 
@@ -151,11 +153,14 @@ function WeatherDayColumn({ day, minLow, maxHigh }: WeatherDayColumnProps) {
       <span
         className="inline-flex items-center gap-[1.5px] text-[9px]"
         style={{
-          color: isWet ? "#3E7FB0" : "var(--ink-faint)",
+          color: isWet ? "var(--weather-wet)" : "var(--ink-faint)",
           fontWeight: isWet ? 600 : 400,
         }}
       >
-        <Droplet size={8} color={isWet ? "#3E7FB0" : "var(--ink-faint)"} />
+        <Droplet
+          size={8}
+          color={isWet ? "var(--weather-wet)" : "var(--ink-faint)"}
+        />
         <span className="font-mono">{Math.round(day.precipitation)}%</span>
       </span>
     </div>

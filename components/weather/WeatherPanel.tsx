@@ -6,7 +6,7 @@ import {
   CloseIcon,
   RefreshIcon,
 } from "@/components/icons/WeatherIcons";
-import { ICON_TINT } from "@/lib/weather/types";
+import { WEATHER_ICON_TINT } from "@/lib/constants/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeatherBounds } from "@/hooks/useWeatherBounds";
 
@@ -68,7 +68,7 @@ export function WeatherPanel({
           <div className="border-line flex items-center gap-2.5 border-b px-4 pt-2.75 pb-2.5">
             <span
               className="bg-bg-soft inline-flex size-7 shrink-0 items-center justify-center rounded-full"
-              style={{ color: ICON_TINT.partly }}
+              style={{ color: WEATHER_ICON_TINT.partly }}
             >
               <PartlyGlyph size={16} />
             </span>

@@ -8,15 +8,37 @@ import { extractErrorMessage } from "@/lib/utils/error";
 import type { ActionResult } from "@/lib/utils/error";
 import type { WeatherForecast } from "@/lib/weather/types";
 
+// Server-side per-user rate limit
+const RATE_LIMIT_MS = 60_000;
+const lastCallByUser = new Map<string, number>();
+
 export async function fetchWeatherAction(
   latitude: number,
   longitude: number,
 ): Promise<ActionResult<WeatherForecast>> {
-  await requireAuth();
+  const user = await requireAuth();
 
-  if (typeof latitude !== "number" || typeof longitude !== "number") {
-    return { success: false, message: "Latitude and longitude are required" };
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return { success: false, message: "Invalid coordinates" };
   }
+
+  const now = Date.now();
+  const lastCall = lastCallByUser.get(user.id) ?? 0;
+  if (now - lastCall < RATE_LIMIT_MS) {
+    const waitSeconds = Math.ceil((RATE_LIMIT_MS - (now - lastCall)) / 1000);
+    return {
+      success: false,
+      message: `Forecast is still fresh — try again in ${waitSeconds}s.`,
+    };
+  }
+  lastCallByUser.set(user.id, now);
 
   try {
     const forecast = await fetchWeatherForecast(latitude, longitude);
@@ -38,9 +60,19 @@ export async function fetchWeatherAction(
         `Write a brief caption.`,
     });
 
-    forecast.current.caption = caption.replace(/^["']|["']$/g, "");
+    const enrichedForecast: WeatherForecast = {
+      ...forecast,
+      current: {
+        ...forecast.current,
+        caption: caption.replace(/^["']|["']$/g, ""),
+      },
+    };
 
-    return { success: true, message: "Weather fetched", data: forecast };
+    return {
+      success: true,
+      message: "Weather fetched",
+      data: enrichedForecast,
+    };
   } catch (error) {
     const message = extractErrorMessage(error);
     return { success: false, message };

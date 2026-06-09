@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { PartlyGlyph, Sparkle } from "@/components/icons/WeatherIcons";
-import { ICON_TINT } from "@/lib/weather/types";
+import { WEATHER_ICON_TINT } from "@/lib/constants/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeatherBounds } from "@/hooks/useWeatherBounds";
 
@@ -50,7 +50,7 @@ export function WeatherPopover({
               <div className="mb-1 flex items-center gap-2">
                 <span
                   className="inline-flex"
-                  style={{ color: ICON_TINT.partly }}
+                  style={{ color: WEATHER_ICON_TINT.partly }}
                 >
                   <PartlyGlyph size={18} />
                 </span>

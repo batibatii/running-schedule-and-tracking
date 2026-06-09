@@ -21,6 +21,7 @@ interface GeolocationState {
   longitude: number | null;
   loading: boolean;
   error: string | null;
+  usedFallback: boolean;
 }
 
 function loadCached(): CachedLocation | null {
@@ -46,6 +47,7 @@ export function useGeolocation() {
     longitude: null,
     loading: false,
     error: null,
+    usedFallback: false,
   });
 
   const requestLocation = useCallback((): Promise<{
@@ -60,6 +62,7 @@ export function useGeolocation() {
         longitude: cached.longitude,
         loading: false,
         error: null,
+        usedFallback: false,
       });
       return Promise.resolve({
         latitude: cached.latitude,
@@ -75,6 +78,7 @@ export function useGeolocation() {
         ...DEFAULT_LOCATION,
         loading: false,
         error: "Geolocation not supported",
+        usedFallback: true,
       });
       return Promise.resolve(DEFAULT_LOCATION);
     }
@@ -87,7 +91,12 @@ export function useGeolocation() {
             longitude: position.coords.longitude,
           };
           saveCache(coords.latitude, coords.longitude);
-          setState({ ...coords, loading: false, error: null });
+          setState({
+            ...coords,
+            loading: false,
+            error: null,
+            usedFallback: false,
+          });
           resolve(coords);
         },
         (geolocationError) => {
@@ -95,6 +104,7 @@ export function useGeolocation() {
             ...DEFAULT_LOCATION,
             loading: false,
             error: geolocationError.message,
+            usedFallback: true,
           });
           resolve(DEFAULT_LOCATION);
         },

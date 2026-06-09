@@ -6,7 +6,13 @@
 // (between the schedule's right edge and the viewport's right edge).
 // ---------------------------------------------------------------------------
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  type RefObject,
+} from "react";
 
 export interface WeatherBounds {
   /** Top of StatsStrip (viewport-relative). */
@@ -24,14 +30,18 @@ export function useWeatherBounds() {
   const statsRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [bounds, setBounds] = useState<WeatherBounds | null>(null);
+  const rafId = useRef(0);
 
   const measure = useCallback(() => {
     const statsElement = statsRef.current;
     const gridElement = gridRef.current;
     if (!statsElement || !gridElement) return;
 
+    // Cancel any pending frame to prevent redundant reads
+    cancelAnimationFrame(rafId.current);
+
     // Read geometry after the browser finishes its layout pass
-    requestAnimationFrame(() => {
+    rafId.current = requestAnimationFrame(() => {
       const statsRect = statsElement.getBoundingClientRect();
       const gridRect = gridElement.getBoundingClientRect();
 

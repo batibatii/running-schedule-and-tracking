@@ -41,16 +41,13 @@ import {
 } from "@/app/actions/workout";
 import { deleteActivityAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
-import { toast } from "sonner";
 import { WeatherBadge } from "@/components/weather/WeatherBadge";
 import { WeatherPopover } from "@/components/weather/WeatherPopover";
 import { WeatherPanel } from "@/components/weather/WeatherPanel";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 import { WeatherContent } from "@/components/weather/WeatherContent";
 import { useWeatherBounds } from "@/hooks/useWeatherBounds";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { fetchWeatherAction } from "@/app/actions/weather";
-import type { WeatherForecast } from "@/lib/weather/types";
+import { useWeather } from "@/hooks/useWeather";
 import {
   DndContext,
   DragOverlay,
@@ -72,57 +69,9 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [viewingActivity, setViewingActivity] =
     useState<StandaloneActivity | null>(null);
 
-  // ── Weather state machine: idle → popover → loading → loaded ──
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [weatherLoading, setWeatherLoading] = useState(false);
-  const [weatherForecast, setWeatherForecast] =
-    useState<WeatherForecast | null>(null);
-
+  // ── Weather ──
   const { statsRef, gridRef, bounds: weatherBounds } = useWeatherBounds();
-  const { requestLocation } = useGeolocation();
-
-  const loadWeather = async () => {
-    const coords = await requestLocation();
-    const result = await fetchWeatherAction(coords.latitude, coords.longitude);
-    if (!result.success || !result.data) {
-      throw new Error(result.message);
-    }
-    return result.data;
-  };
-
-  const handleGenerate = async () => {
-    setPopoverOpen(false);
-    setPanelOpen(true);
-    setWeatherLoading(true);
-    setWeatherForecast(null);
-
-    try {
-      const forecast = await loadWeather();
-      setWeatherForecast(forecast);
-    } catch (error) {
-      console.error("[weather] Failed to load forecast:", error);
-      setPanelOpen(false);
-      toast.error("Couldn't load the forecast. Try again in a moment.");
-    } finally {
-      setWeatherLoading(false);
-    }
-  };
-
-  const handleWeatherRefresh = async () => {
-    setWeatherLoading(true);
-    setWeatherForecast(null);
-
-    try {
-      const forecast = await loadWeather();
-      setWeatherForecast(forecast);
-    } catch (error) {
-      console.error("[weather] Failed to refresh forecast:", error);
-      toast.error("Couldn't refresh the forecast. Try again in a moment.");
-    } finally {
-      setWeatherLoading(false);
-    }
-  };
+  const weather = useWeather();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -510,28 +459,29 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
 
         {/* ── Weather forecast (fixed in right gutter) ──────────── */}
         <WeatherBadge
-          hidden={panelOpen}
+          hidden={weather.panelOpen}
           bounds={weatherBounds}
-          onClick={() => setPopoverOpen((prev) => !prev)}
+          weatherIcon={weather.forecast?.current.icon}
+          onClick={weather.handleBadgeClick}
         />
         <WeatherPopover
-          open={popoverOpen}
+          open={weather.popoverOpen}
           bounds={weatherBounds}
-          onGenerate={handleGenerate}
-          onClose={() => setPopoverOpen(false)}
+          onGenerate={weather.handleGenerate}
+          onClose={weather.handlePopoverClose}
         />
         <WeatherPanel
-          open={panelOpen}
-          loading={weatherLoading}
-          location={weatherForecast?.location ?? "Loading…"}
+          open={weather.panelOpen}
+          loading={weather.loading}
+          location={weather.forecast?.location ?? "Loading…"}
           bounds={weatherBounds}
-          onClose={() => setPanelOpen(false)}
-          onRefresh={handleWeatherRefresh}
+          onClose={weather.handlePanelClose}
+          onRefresh={weather.handleRefresh}
         >
-          {weatherLoading || !weatherForecast ? (
+          {weather.loading || !weather.forecast ? (
             <WeatherSkeleton />
           ) : (
-            <WeatherContent forecast={weatherForecast} />
+            <WeatherContent forecast={weather.forecast} />
           )}
         </WeatherPanel>
 
