@@ -45,8 +45,6 @@ export function WorkoutPreviewCard({
   workoutType,
   heartRateZone,
   distance,
-  duration,
-  pace,
   dayOfWeek,
 }: WorkoutPreviewCardProps) {
   return (
@@ -54,45 +52,65 @@ export function WorkoutPreviewCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="border-line bg-surface rounded-2xl border p-3"
+      className="border-line-strong bg-background rounded-[18px] border border-dashed p-3.5"
+      style={{ maxWidth: "94%" }}
     >
-      {/* Sport · italic workout type */}
-      <div className="mb-1.5 flex items-baseline gap-1.5">
+      <div className="mb-1 flex items-center gap-2">
         <span
-          className={`inline-flex h-5.5 w-5.5 shrink-0 items-center justify-center self-center rounded-full ${SPORT_ICON_BACKGROUND[sport]}`}
+          className={`inline-flex size-6 shrink-0 items-center justify-center rounded-full ${SPORT_ICON_BACKGROUND[sport]}`}
         >
-          <SportIcon sport={sport} size={12} />
+          <SportIcon sport={sport} size={13} />
         </span>
-        <span className="text-[13px] font-semibold">
+        <span className="text-[13.5px] font-semibold">
           {getSportLabel(sport)}
         </span>
-        <span className="text-ink-faint text-[13px]">&middot;</span>
+        <span className="text-ink-faint">&middot;</span>
         <span
-          className={`font-display text-[13px] leading-[1.2] tracking-[-0.005em] italic ${WORKOUT_TYPE_FOREGROUND[workoutType]}`}
+          className={`font-display text-[14px] italic ${WORKOUT_TYPE_FOREGROUND[workoutType]}`}
         >
           {getWorkoutTypeLabel(workoutType)}
         </span>
-      </div>
-
-      {/* Stats row */}
-      <div className="text-ink-soft flex items-center gap-2.5 font-mono text-xs">
-        {distance > 0 && <span>{distance} km</span>}
-        {duration != null && duration > 0 && <span>{duration} min</span>}
-        {pace && <span>{pace}/km</span>}
         <span
-          className={`ml-auto rounded-full px-1.75 py-px text-[10px] font-semibold ${getZoneColor(heartRateZone)}`}
+          className={`ml-auto rounded-full px-2 py-px text-[10px] font-semibold ${getZoneColor(heartRateZone)}`}
         >
           {getZoneLabel(heartRateZone)}
         </span>
       </div>
 
-      {/* Confirmation line */}
-      <p className="text-muted-foreground mt-2 text-[11px]">
-        Added to{" "}
-        <span className="text-foreground/70 font-medium">
-          {DAY_LABELS[dayOfWeek]}
-        </span>
-      </p>
+      {/* Stats line: "10 km · Wednesday" */}
+      <div className="text-ink-soft mb-3 font-mono text-[12.5px]">
+        {distance > 0 && <span>{distance} km</span>}
+        {distance > 0 && <span> · </span>}
+        {DAY_LABELS[dayOfWeek]}
+      </div>
+
+      <div className="flex gap-2">
+        <Button icon={null} label="Add to schedule" />
+        <ButtonGhost label="Add to playground" />
+        <ButtonGhost label="Edit" />
+      </div>
     </motion.div>
+  );
+}
+
+function Button({ label }: { icon: React.ReactNode | null; label: string }) {
+  return (
+    <button
+      className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-full border-none px-3.5 py-1.75 text-[12.5px] font-semibold shadow-xs"
+      type="button"
+    >
+      {label}
+    </button>
+  );
+}
+
+function ButtonGhost({ label }: { label: string }) {
+  return (
+    <button
+      className="border-line bg-surface text-ink-soft hover:bg-bg-soft inline-flex items-center rounded-full border px-3.5 py-1.75 text-[12.5px] font-medium transition-colors"
+      type="button"
+    >
+      {label}
+    </button>
   );
 }

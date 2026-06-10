@@ -89,7 +89,7 @@ export function GeneratorSection({
             <Button
               variant="outline"
               size="icon-xs"
-              className="border-line bg-surface hover:bg-bg-soft h-5.5 w-5.5 rounded-full"
+              className="border-line-strong bg-surface hover:bg-bg-soft h-5.5 w-5.5 rounded-full"
             >
               <Plus className="h-2.75 w-2.75" />
             </Button>

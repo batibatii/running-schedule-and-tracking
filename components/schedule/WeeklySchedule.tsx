@@ -9,8 +9,10 @@ import {
   formatDateDisplay,
   formatDateToISO,
   getDayName,
+  getDayOfWeek,
 } from "@/lib/utils/date";
 import { DAYS_OF_WEEK, DayOfWeek, Workout } from "@/types/workout";
+import type { WorkoutSummary } from "@/types/ai";
 import type {
   ScheduleItem,
   ScheduleWorkout,
@@ -24,6 +26,10 @@ import { SortableDay } from "./SortableDay";
 import { SortableWorkoutCard } from "./SortableWorkoutCard";
 import { DraggableActivityCard } from "./DraggableActivityCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
+import { AccordionPanel } from "@/components/ui/accordion-panel";
+import { AIChatPanel } from "@/components/ai/AIChatPanel";
+import { useAIChat } from "@/hooks/useAIChat";
+import { Sparkles } from "lucide-react";
 import { PillChip } from "@/components/playground/PillChip";
 import { PillGroupCard } from "@/components/playground/PillGroupCard";
 import { PresetChip } from "@/components/playground/PresetChip";
@@ -205,6 +211,28 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   };
 
   const displayWorkouts = getDisplayWorkouts();
+
+  // ── AI Chat ──
+  const currentDay = getDayOfWeek(new Date());
+  const existingWorkouts: WorkoutSummary[] = displayWorkouts.map((workout) => ({
+    id: workout.id,
+    day: workout.dayOfWeek,
+    sport: workout.sport,
+    workoutType: workout.workoutType,
+    distance: workout.distance,
+    completed: workout.completed,
+  }));
+
+  const aiChat = useAIChat({
+    weekContext: {
+      weekStartDate: weekStartDateISO,
+      currentDay,
+      existingWorkouts,
+    },
+    onWorkoutCreated: refreshWorkouts,
+    onPlanApplied: refreshWorkouts,
+    addPill,
+  });
 
   // Determine which day the currently dragged workout belongs to
   const activeDragSourceDay =
@@ -485,17 +513,46 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
           )}
         </WeatherPanel>
 
-        {/* Playground + Presets */}
-        <PlaygroundArea
-          items={items}
-          onAddPill={addPill}
-          isDragActive={activeId !== null}
-          activeId={activeId}
-          activeDragType={activeDragType}
-          remainingSlots={remainingSlots}
-          onSaveAsPreset={addPreset}
-          presets={presets}
-        />
+        {/* Playground + AI Chat — side-by-side accordion panels */}
+        <div className="grid grid-cols-[55fr_45fr] items-start gap-4">
+          <AccordionPanel
+            title="Playground"
+            label="Workout builder"
+            storageKey="playground"
+            defaultOpen={true}
+          >
+            <PlaygroundArea
+              items={items}
+              onAddPill={addPill}
+              isDragActive={activeId !== null}
+              activeId={activeId}
+              activeDragType={activeDragType}
+              remainingSlots={remainingSlots}
+              onSaveAsPreset={addPreset}
+              presets={presets}
+            />
+          </AccordionPanel>
+
+          <AccordionPanel
+            title={
+              <>
+                Ask the{" "}
+                <em className="text-primary text-2xl italic">assistant</em>
+              </>
+            }
+            label="AI coach"
+            icon={<Sparkles className="size-4" />}
+            storageKey="ai-chat"
+            defaultOpen={false}
+          >
+            <AIChatPanel
+              messages={aiChat.messages}
+              status={aiChat.status}
+              sendMessage={aiChat.sendMessage}
+              onApplyPlan={aiChat.handleApplyPlan}
+            />
+          </AccordionPanel>
+        </div>
 
         <AddWorkoutDialog
           open={isDialogOpen}

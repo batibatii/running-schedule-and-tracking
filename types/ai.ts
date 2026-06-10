@@ -1,4 +1,4 @@
-import type { DayOfWeek, Sport, WorkoutType, HeartRateZone } from "./workout";
+import type { DayOfWeek, Sport, WorkoutType } from "./workout";
 
 // ── Context sent from client on each AI chat request ──
 

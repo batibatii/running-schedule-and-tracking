@@ -16,7 +16,7 @@ export function TrashBin({ isDragActive }: TrashBinProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center rounded-[18px] border-2 border-dashed transition-all duration-300 ease-out ${
+      className={`fixed bottom-2 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center rounded-[18px] border-2 border-dashed transition-all duration-300 ease-out ${
         isDragActive
           ? isOver
             ? "border-coral-deep bg-coral/15 scale-110 opacity-100 shadow-lg"

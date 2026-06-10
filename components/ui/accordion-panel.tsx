@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,8 @@ function persistState(storageKey: string, isOpen: boolean) {
 }
 
 interface AccordionPanelProps {
-  title: string;
+  title: ReactNode;
+  label?: string;
   icon?: ReactNode;
   defaultOpen?: boolean;
   storageKey: string;
@@ -41,14 +42,19 @@ interface AccordionPanelProps {
 
 export function AccordionPanel({
   title,
+  label,
   icon,
   defaultOpen = false,
   storageKey,
   children,
 }: AccordionPanelProps) {
-  const [isOpen, setIsOpen] = useState(() =>
-    readPersistedState(storageKey, defaultOpen),
-  );
+  // Start with defaultOpen (same on server + client) to avoid hydration mismatch,
+  // then sync from localStorage after mount.
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    setIsOpen(readPersistedState(storageKey, defaultOpen));
+  }, [storageKey, defaultOpen]);
 
   function toggle() {
     const next = !isOpen;
@@ -57,24 +63,43 @@ export function AccordionPanel({
   }
 
   return (
-    <div className="border-border/50 bg-surface rounded-xl border">
+    <section
+      className="bg-surface flex flex-col overflow-hidden rounded-[24px]"
+      style={{ boxShadow: "inset 0 0 0 1px var(--color-line)" }}
+    >
+      {/* Header */}
       <Button
         variant="ghost"
-        size="lg"
         onClick={toggle}
         className={cn(
-          "text-foreground/80 hover:text-foreground flex w-full items-center justify-start gap-2 rounded-xl px-4 py-3 text-sm font-medium",
-          !isOpen && "rounded-b-xl",
+          "flex h-auto w-full items-center justify-between gap-3 rounded-none px-4.5 py-4 hover:bg-transparent",
+          isOpen && "border-b-line-strong border-b",
         )}
       >
-        {icon && <span className="shrink-0">{icon}</span>}
-        <span className="flex-1 text-left">{title}</span>
-        <motion.span
-          animate={{ rotate: isOpen ? 0 : -90 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-        >
-          <ChevronDown className="text-foreground/40 size-4" />
-        </motion.span>
+        <div className="flex items-center gap-3">
+          {icon && (
+            <span className="bg-primary/10 text-primary inline-flex size-7.5 shrink-0 items-center justify-center rounded-full">
+              {icon}
+            </span>
+          )}
+          <div className="text-left leading-[1.1]">
+            {label && (
+              <div className="text-ink-faint mb-0.5 text-[11px] tracking-widest uppercase">
+                {label}
+              </div>
+            )}
+            <div className="font-display text-foreground text-2xl">{title}</div>
+          </div>
+        </div>
+        <span className="border-line-strong bg-surface text-ink-soft inline-flex size-7.5 shrink-0 items-center justify-center rounded-full border">
+          <motion.span
+            animate={{ rotate: isOpen ? 0 : -90 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="inline-flex"
+          >
+            <ChevronDown className="size-4" />
+          </motion.span>
+        </span>
       </Button>
 
       {/* Content stays mounted for DndContext ref stability */}
@@ -85,10 +110,10 @@ export function AccordionPanel({
           opacity: isOpen ? 1 : 0,
         }}
         transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
-        style={{ overflow: "hidden" }}
+        className="overflow-hidden"
       >
-        <div className="px-4 pb-4">{children}</div>
+        <div className="px-4.5 pb-4.5">{children}</div>
       </motion.div>
-    </div>
+    </section>
   );
 }

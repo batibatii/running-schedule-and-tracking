@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
-  Pill,
   PlaygroundItem,
   PillFieldType,
   PartialWorkoutFields,
@@ -134,18 +133,11 @@ export function PlaygroundArea({
   const dropZoneBorderColor = getDropZoneBorderColor(capacityFraction);
 
   return (
-    <section
+    <div
       ref={setNodeRef}
-      className={`border-line bg-surface rounded-[24px] border p-5.5 transition-all ${isOver ? "ring-coral-deep/40 ring-2" : ""}`}
+      className={`flex max-h-107.5 flex-col gap-3.5 overflow-hidden transition-all ${isOver ? "ring-coral-deep/40 rounded-xl ring-2" : ""}`}
     >
-      {/* Header */}
-      <div className="mb-4 flex items-baseline justify-between">
-        <div>
-          <div className="text-ink-faint mb-0.5 text-[11px] tracking-widest uppercase">
-            Workout builder
-          </div>
-          <h2 className="font-display m-0 text-2xl font-normal">Playground</h2>
-        </div>
+      <div className="flex justify-end pt-4">
         <RotatingTip />
       </div>
 
@@ -172,7 +164,7 @@ export function PlaygroundArea({
 
       {/* Center drop zone */}
       <div
-        className="border-line-strong my-3.5 flex min-h-20 flex-wrap items-start gap-2 rounded-[18px] border border-dashed p-4 transition-colors duration-300"
+        className="border-line-strong flex max-h-40 min-h-20 flex-wrap items-start gap-2 overflow-y-auto rounded-[18px] border border-dashed p-4 transition-colors duration-300"
         style={
           dropZoneBorderColor ? { borderColor: dropZoneBorderColor } : undefined
         }
@@ -241,6 +233,6 @@ export function PlaygroundArea({
 
       {/* Presets footer */}
       {presets && presets.length > 0 && <PresetSection presets={presets} />}
-    </section>
+    </div>
   );
 }
