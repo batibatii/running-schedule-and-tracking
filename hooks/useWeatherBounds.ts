@@ -24,6 +24,7 @@ export interface WeatherBounds {
   /** Right edge of the schedule content (viewport-relative). */
   contentRight: number;
   viewportWidth: number;
+  viewportHeight: number;
 }
 
 export function useWeatherBounds() {
@@ -51,6 +52,7 @@ export function useWeatherBounds() {
         gridBottom: gridRect.bottom,
         contentRight: gridRect.right,
         viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
       });
     });
   }, []);

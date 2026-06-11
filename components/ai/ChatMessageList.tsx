@@ -39,13 +39,34 @@ export function ChatMessageList({
     }
   }, [messageCount, isAtBottom]);
 
+  // Auto-scroll during streaming — content grows without messageCount changing
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new MutationObserver(() => {
+      if (isAtBottom) {
+        container.scrollTo({ top: container.scrollHeight });
+      }
+    });
+
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, [isAtBottom]);
+
   return (
-    <div className="relative flex-1">
+    <div className="relative min-h-0 flex-1">
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex h-full flex-col gap-3 overflow-y-auto pr-1"
+        className="absolute inset-0 flex flex-col gap-3 overflow-y-auto py-3 pr-1"
       >
+        <div className="flex-1" aria-hidden />
         {children}
       </div>
 

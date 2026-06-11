@@ -6,6 +6,7 @@ import type { ChatStatus } from "ai";
 import { ChatInput } from "@/components/ai/ChatInput";
 import { ChatMessage } from "@/components/ai/ChatMessage";
 import { ChatMessageList } from "@/components/ai/ChatMessageList";
+import { MarkdownContent } from "@/components/ai/MarkdownContent";
 import { SuggestedPrompts } from "@/components/ai/SuggestedPrompts";
 import { WorkoutPreviewCard } from "@/components/ai/WorkoutPreviewCard";
 import { TrainingPlanCard } from "@/components/ai/TrainingPlanCard";
@@ -22,9 +23,11 @@ interface AIChatPanelProps {
   status: ChatStatus;
   sendMessage: (options: { text: string }) => void;
   onApplyPlan: (plan: TrainingPlan) => void;
+  onUndo: (toolCallId: string) => Promise<boolean>;
+  activeWorkoutIds: Set<string>;
+  error?: Error | undefined;
 }
 
-/** Track which plans have been applied or are applying by toolCallId */
 type PlanState = "idle" | "applying" | "applied";
 
 export function AIChatPanel({
@@ -32,6 +35,9 @@ export function AIChatPanel({
   status,
   sendMessage,
   onApplyPlan,
+  onUndo,
+  activeWorkoutIds,
+  error,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [planStates, setPlanStates] = useState<Record<string, PlanState>>({});
@@ -61,21 +67,30 @@ export function AIChatPanel({
   }
 
   return (
-    <div className="flex min-h-107.5 flex-1 flex-col">
-      {hasMessages ? (
-        <ChatMessageList messageCount={messages.length}>
-          {messages.map((message) => (
-            <MessageRenderer
-              key={message.id}
-              message={message}
-              planStates={planStates}
-              onApplyPlan={handleApplyPlan}
-            />
-          ))}
-        </ChatMessageList>
-      ) : (
-        <SuggestedPrompts onSelect={handleSuggestedPrompt} />
-      )}
+    <div className="grid h-107.5 grid-rows-[1fr_auto]">
+      <div className="flex min-h-0 flex-col pr-4">
+        {error && (
+          <div className="text-destructive bg-destructive/10 mb-2 rounded-lg p-3 text-xs">
+            {error.message}
+          </div>
+        )}
+        {hasMessages ? (
+          <ChatMessageList messageCount={messages.length}>
+            {messages.map((message) => (
+              <MessageRenderer
+                key={message.id}
+                message={message}
+                planStates={planStates}
+                onApplyPlan={handleApplyPlan}
+                onUndo={onUndo}
+                activeWorkoutIds={activeWorkoutIds}
+              />
+            ))}
+          </ChatMessageList>
+        ) : (
+          <SuggestedPrompts onSelect={handleSuggestedPrompt} />
+        )}
+      </div>
 
       <ChatInput
         value={input}
@@ -95,6 +110,8 @@ interface MessageRendererProps {
   message: UIMessage;
   planStates: Record<string, PlanState>;
   onApplyPlan: (toolCallId: string, plan: TrainingPlan) => void;
+  onUndo: (toolCallId: string) => Promise<boolean>;
+  activeWorkoutIds: Set<string>;
 }
 
 function getToolName(partType: string): string | null {
@@ -105,6 +122,8 @@ function MessageRenderer({
   message,
   planStates,
   onApplyPlan,
+  onUndo,
+  activeWorkoutIds,
 }: MessageRendererProps) {
   const textParts = message.parts.filter((part) => part.type === "text");
   const toolParts = message.parts.filter((part) =>
@@ -115,9 +134,17 @@ function MessageRenderer({
     <>
       {textParts.length > 0 && (
         <ChatMessage role={message.role as "user" | "assistant"}>
-          {textParts.map((part, index) => (
-            <span key={index}>{part.type === "text" ? part.text : null}</span>
-          ))}
+          {message.role === "assistant" ? (
+            <MarkdownContent>
+              {textParts
+                .map((part) => (part.type === "text" ? part.text : ""))
+                .join("\n\n")}
+            </MarkdownContent>
+          ) : (
+            textParts.map((part, index) => (
+              <span key={index}>{part.type === "text" ? part.text : null}</span>
+            ))
+          )}
         </ChatMessage>
       )}
 
@@ -135,6 +162,7 @@ function MessageRenderer({
 
         if (toolName === "createWorkout" && output?.workout) {
           const workout = output.workout as {
+            id: string;
             sport: Sport;
             workoutType: WorkoutType;
             heartRateZone: HeartRateZone;
@@ -144,7 +172,21 @@ function MessageRenderer({
             dayOfWeek: DayOfWeek;
             title?: string;
           };
-          return <WorkoutPreviewCard key={toolCallId} {...workout} />;
+          return (
+            <WorkoutPreviewCard
+              key={toolCallId}
+              sport={workout.sport}
+              workoutType={workout.workoutType}
+              heartRateZone={workout.heartRateZone}
+              distance={workout.distance}
+              duration={workout.duration}
+              pace={workout.pace}
+              dayOfWeek={workout.dayOfWeek}
+              title={workout.title}
+              onUndo={() => onUndo(toolCallId)}
+              gone={!activeWorkoutIds.has(workout.id)}
+            />
+          );
         }
 
         if (toolName === "generateTrainingPlan" && output?.plan) {

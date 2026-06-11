@@ -41,23 +41,31 @@ export function generateTrainingPlanTool(
       "Generate a structured 7-day training plan based on the user's recent training history and preferences. Use when the user asks for a plan or weekly schedule.",
     inputSchema: zodSchema(parametersSchema),
     execute: async ({ focus, weeklyDistanceTarget, maxDaysPerWeek }) => {
-      const recentWorkouts = await getRecentWorkoutHistory(userId);
-      const stravaConnected = !!(await getStravaTokensByUserId(userId));
+      console.log("[generateTrainingPlan] starting...");
+      try {
+        const recentWorkouts = await getRecentWorkoutHistory(userId);
+        const stravaConnected = !!(await getStravaTokensByUserId(userId));
 
-      const result = await generateText({
-        model: anthropic("claude-sonnet-4-5-20250514"),
-        output: Output.object({ schema: zodSchema(trainingPlanSchema) }),
-        prompt: buildPlanPrompt({
-          recentWorkouts,
-          stravaConnected,
-          weekContext,
-          focus,
-          weeklyDistanceTarget,
-          maxDaysPerWeek,
-        }),
-      });
+        console.log("[generateTrainingPlan] calling inner model...");
+        const result = await generateText({
+          model: anthropic("claude-sonnet-4-6"),
+          output: Output.object({ schema: zodSchema(trainingPlanSchema) }),
+          prompt: buildPlanPrompt({
+            recentWorkouts,
+            stravaConnected,
+            weekContext,
+            focus,
+            weeklyDistanceTarget,
+            maxDaysPerWeek,
+          }),
+        });
 
-      return { action: "showTrainingPlan", plan: result.output! };
+        console.log("[generateTrainingPlan] success:", !!result.output);
+        return { action: "showTrainingPlan", plan: result.output! };
+      } catch (error) {
+        console.error("[generateTrainingPlan] error:", error);
+        throw error;
+      }
     },
   });
 }

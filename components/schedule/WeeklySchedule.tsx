@@ -75,6 +75,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [viewingActivity, setViewingActivity] =
     useState<StandaloneActivity | null>(null);
 
+  // Refs for AI chat — lets useDragDropManager inform the LLM without hook ordering issues
+  const aiNotifyRef = useRef<(text: string) => void>(() => {});
+  const aiEvictRef = useRef<(id: string) => void>(() => {});
+
   // ── Weather ──
   const { statsRef, gridRef, bounds: weatherBounds } = useWeatherBounds();
   const weather = useWeather();
@@ -100,7 +104,6 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     refreshWorkouts();
   }, [weekStartDateISO]);
 
-  // Re-fetch when sync completes (triggered from TopBar)
   const hasMountedSync = useRef(false);
   useEffect(() => {
     if (!hasMountedSync.current) {
@@ -162,6 +165,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     removePreset,
     restorePreset,
     refreshWorkouts,
+    onWorkoutTrashed: (id, label) => {
+      aiEvictRef.current(id);
+      aiNotifyRef.current(`User deleted ${label} from the schedule`);
+    },
   });
 
   const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
@@ -223,6 +230,8 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     completed: workout.completed,
   }));
 
+  const activeWorkoutIds = new Set(existingWorkouts.map((w) => w.id));
+
   const aiChat = useAIChat({
     weekContext: {
       weekStartDate: weekStartDateISO,
@@ -230,9 +239,17 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
       existingWorkouts,
     },
     onWorkoutCreated: refreshWorkouts,
+    onWorkoutDeleted: refreshWorkouts,
     onPlanApplied: refreshWorkouts,
-    addPill,
+    addExistingPill,
+    addGroup,
+    removePlaygroundItem: removeItem,
+    undoWorkout: deleteWorkoutAction,
   });
+
+  // Keep refs in sync so DnD trash handler can notify the LLM
+  aiNotifyRef.current = aiChat.notifySilently;
+  aiEvictRef.current = aiChat.evictWorkout;
 
   // Determine which day the currently dragged workout belongs to
   const activeDragSourceDay =
@@ -550,6 +567,9 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
               status={aiChat.status}
               sendMessage={aiChat.sendMessage}
               onApplyPlan={aiChat.handleApplyPlan}
+              onUndo={aiChat.undoToolAction}
+              activeWorkoutIds={activeWorkoutIds}
+              error={aiChat.error}
             />
           </AccordionPanel>
         </div>
