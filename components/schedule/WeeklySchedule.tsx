@@ -44,6 +44,7 @@ import {
   createWorkoutAction,
   updateWorkoutAction,
   deleteWorkoutAction,
+  deleteWorkoutsBatchAction,
 } from "@/app/actions/workout";
 import { deleteActivityAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
@@ -235,6 +236,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const aiChat = useAIChat({
     weekContext: {
       weekStartDate: weekStartDateISO,
+      todayDate: formatDateToISO(new Date()),
       currentDay,
       existingWorkouts,
     },
@@ -245,6 +247,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     addGroup,
     removePlaygroundItem: removeItem,
     undoWorkout: deleteWorkoutAction,
+    undoPlan: deleteWorkoutsBatchAction,
   });
 
   // Keep refs in sync so DnD trash handler can notify the LLM

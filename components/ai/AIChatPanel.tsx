@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import type { UIMessage } from "ai";
 import type { ChatStatus } from "ai";
 import { ChatInput } from "@/components/ai/ChatInput";
@@ -22,13 +24,13 @@ interface AIChatPanelProps {
   messages: UIMessage[];
   status: ChatStatus;
   sendMessage: (options: { text: string }) => void;
-  onApplyPlan: (plan: TrainingPlan) => void;
+  onApplyPlan: (plan: TrainingPlan, generateToolCallId: string) => void;
   onUndo: (toolCallId: string) => Promise<boolean>;
   activeWorkoutIds: Set<string>;
   error?: Error | undefined;
 }
 
-type PlanState = "idle" | "applying" | "applied";
+type PlanState = "idle" | "applying" | "applied" | "undone";
 
 export function AIChatPanel({
   messages,
@@ -59,11 +61,15 @@ export function AIChatPanel({
 
   function handleApplyPlan(toolCallId: string, plan: TrainingPlan) {
     setPlanStates((prev) => ({ ...prev, [toolCallId]: "applying" }));
-    onApplyPlan(plan);
-    // The parent will call sendMessage to trigger applyPlanToSchedule tool,
-    // and we mark as applied when the message stream completes.
-    // For now, optimistically mark as applied after a short delay.
+    onApplyPlan(plan, toolCallId);
     setPlanStates((prev) => ({ ...prev, [toolCallId]: "applied" }));
+  }
+
+  async function handleUndoPlan(toolCallId: string) {
+    const success = await onUndo(toolCallId);
+    if (success) {
+      setPlanStates((prev) => ({ ...prev, [toolCallId]: "undone" }));
+    }
   }
 
   return (
@@ -82,6 +88,7 @@ export function AIChatPanel({
                 message={message}
                 planStates={planStates}
                 onApplyPlan={handleApplyPlan}
+                onUndoPlan={handleUndoPlan}
                 onUndo={onUndo}
                 activeWorkoutIds={activeWorkoutIds}
               />
@@ -103,6 +110,50 @@ export function AIChatPanel({
 }
 
 // ---------------------------------------------------------------------------
+// Training plan loading skeleton
+// ---------------------------------------------------------------------------
+
+function TrainingPlanSkeleton() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="border-line-strong bg-background rounded-[18px] border border-dashed p-3.5 pb-3"
+      style={{ maxWidth: "96%" }}
+    >
+      <div className="mb-2.5 flex items-center gap-2">
+        <span className="text-primary inline-flex animate-pulse">
+          <Sparkles className="size-3.5" />
+        </span>
+        <span className="font-display text-[17px]">Generating plan</span>
+        <span className="text-ink-faint ml-auto text-[10px] tracking-[0.08em] uppercase">
+          <motion.span
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            thinking...
+          </motion.span>
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <div className="bg-bg-soft h-3 w-8 animate-pulse rounded" />
+            <div className="bg-bg-soft size-5 animate-pulse rounded-full" />
+            <div
+              className="bg-bg-soft h-3 animate-pulse rounded"
+              style={{ width: `${50 + ((i * 17) % 30)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Message renderer — iterates over UIMessage.parts
 // ---------------------------------------------------------------------------
 
@@ -110,6 +161,7 @@ interface MessageRendererProps {
   message: UIMessage;
   planStates: Record<string, PlanState>;
   onApplyPlan: (toolCallId: string, plan: TrainingPlan) => void;
+  onUndoPlan: (toolCallId: string) => void;
   onUndo: (toolCallId: string) => Promise<boolean>;
   activeWorkoutIds: Set<string>;
 }
@@ -122,6 +174,7 @@ function MessageRenderer({
   message,
   planStates,
   onApplyPlan,
+  onUndoPlan,
   onUndo,
   activeWorkoutIds,
 }: MessageRendererProps) {
@@ -155,9 +208,19 @@ function MessageRenderer({
           state: string;
           output?: Record<string, unknown>;
         };
-        if (toolPart.state !== "output-available") return null;
 
         const toolName = getToolName(part.type);
+
+        if (
+          toolName === "generateTrainingPlan" &&
+          toolPart.state !== "output-available" &&
+          toolPart.state !== "output-error"
+        ) {
+          return <TrainingPlanSkeleton key={toolPart.toolCallId} />;
+        }
+
+        if (toolPart.state !== "output-available") return null;
+
         const { toolCallId, output } = toolPart;
 
         if (toolName === "createWorkout" && output?.workout) {
@@ -196,10 +259,12 @@ function MessageRenderer({
             <TrainingPlanCard
               key={toolCallId}
               plan={plan}
-              onApply={() => onApplyPlan(toolCallId, plan)}
+              onApply={(editedPlan) => onApplyPlan(toolCallId, editedPlan)}
               onDismiss={() => {}}
+              onUndoPlan={() => onUndoPlan(toolCallId)}
               isApplying={planState === "applying"}
               isApplied={planState === "applied"}
+              isUndone={planState === "undone"}
             />
           );
         }

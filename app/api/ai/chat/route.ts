@@ -19,24 +19,23 @@ import type { WeekContext } from "@/types/ai";
 export async function POST(req: Request) {
   try {
     const user = await requireAuth();
-    const { messages, weekContext, recentActions } = (await req.json()) as {
-      messages: UIMessage[];
-      weekContext: WeekContext;
-      recentActions?: string[];
-    };
+    const { messages, weekContext, recentActions, editedPlanWeeks } =
+      (await req.json()) as {
+        messages: UIMessage[];
+        weekContext: WeekContext;
+        recentActions?: string[];
+        editedPlanWeeks?: string;
+      };
 
     const result = streamText({
       model: anthropic("claude-sonnet-4-6"),
-      system: buildSystemPrompt(weekContext, recentActions),
+      system: buildSystemPrompt(weekContext, recentActions, editedPlanWeeks),
       messages: await convertToModelMessages(messages),
       tools: {
         createWorkout: createWorkoutTool(user.id, weekContext.weekStartDate),
         createPill: createPillTool(),
         generateTrainingPlan: generateTrainingPlanTool(user.id, weekContext),
-        applyPlanToSchedule: applyPlanToScheduleTool(
-          user.id,
-          weekContext.weekStartDate,
-        ),
+        applyPlanToSchedule: applyPlanToScheduleTool(user.id),
         removeWorkout: removeWorkoutTool(user.id),
         createPlaygroundWorkout: createPlaygroundWorkoutTool(),
       },

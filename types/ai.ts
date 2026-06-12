@@ -13,8 +13,13 @@ export interface WorkoutSummary {
 
 export interface WeekContext {
   weekStartDate: string; // ISO "2026-06-08"
+  todayDate: string; // ISO "2026-06-12" — actual today for LLM date math
   currentDay: DayOfWeek;
   existingWorkouts: WorkoutSummary[];
 }
 
-export type { TrainingPlan, PlannedDay } from "@/lib/ai/schemas/trainingPlan";
+export type {
+  TrainingPlan,
+  WeekPlan,
+  PlannedDay,
+} from "@/lib/ai/schemas/trainingPlan";

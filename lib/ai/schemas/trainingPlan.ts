@@ -15,13 +15,21 @@ export const plannedDaySchema = z.object({
   notes: z.string().optional(),
 });
 
+export const weekPlanSchema = z.object({
+  weekStartDate: z
+    .string()
+    .describe("ISO Monday date for this week, e.g. 2026-06-15"),
+  days: z.array(plannedDaySchema).length(7),
+});
+
 export const trainingPlanSchema = z.object({
-  weekSummary: z.string(),
+  planSummary: z.string(),
   totalDistance: z.number(),
   totalSessions: z.number(),
-  days: z.array(plannedDaySchema).length(7),
+  weeks: z.array(weekPlanSchema).min(1).max(12),
   reasoning: z.string(),
 });
 
 export type TrainingPlan = z.infer<typeof trainingPlanSchema>;
+export type WeekPlan = z.infer<typeof weekPlanSchema>;
 export type PlannedDay = z.infer<typeof plannedDaySchema>;

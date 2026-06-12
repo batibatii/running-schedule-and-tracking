@@ -4,7 +4,7 @@ import { useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
-import type { WeekContext } from "@/types/ai";
+import type { WeekContext, TrainingPlan } from "@/types/ai";
 import type {
   PillFieldType,
   PillGroup,
@@ -14,7 +14,8 @@ import type {
 
 type UndoEntry =
   | { type: "workout"; id: string; label: string }
-  | { type: "playground"; id: string };
+  | { type: "playground"; id: string }
+  | { type: "plan"; workoutIds: string[] };
 
 interface UseAIChatOptions {
   weekContext: WeekContext;
@@ -25,6 +26,7 @@ interface UseAIChatOptions {
   addGroup: (group: PillGroup) => boolean;
   removePlaygroundItem: (id: string) => void;
   undoWorkout: (id: string) => Promise<void>;
+  undoPlan: (workoutIds: string[]) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,7 @@ function buildPillGroup(fields: PartialWorkoutFields): PillGroup {
 // Module-level ref containers — avoids React Compiler "refs during render" errors
 let latestWeekContext: WeekContext | null = null;
 let pendingActions: string[] = [];
+let pendingEditedPlanWeeks: string | null = null;
 const evictedWorkoutIds = new Set<string>();
 
 /** Mark a workout as evicted — filtered from context until the server catches up. */
@@ -102,7 +105,9 @@ const transport = new DefaultChatTransport({
     const recentActions =
       pendingActions.length > 0 ? [...pendingActions] : undefined;
     pendingActions = [];
-    return { weekContext: latestWeekContext, recentActions };
+    const editedPlanWeeks = pendingEditedPlanWeeks;
+    pendingEditedPlanWeeks = null;
+    return { weekContext: latestWeekContext, recentActions, editedPlanWeeks };
   },
 });
 
@@ -115,6 +120,7 @@ export function useAIChat({
   addGroup,
   removePlaygroundItem,
   undoWorkout,
+  undoPlan,
 }: UseAIChatOptions) {
   // Sync latest weekContext to module-level variable via effect (not during render)
   useEffect(() => {
@@ -126,6 +132,9 @@ export function useAIChat({
 
   // Map toolCallId → created item info for undo support
   const undoMap = useRef(new Map<string, UndoEntry>());
+
+  // Links the generateTrainingPlan toolCallId to the subsequent applyPlanToSchedule result
+  const pendingPlanToolCallId = useRef<string | null>(null);
 
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
@@ -219,9 +228,21 @@ export function useAIChat({
           onWorkoutDeleted();
           break;
 
-        case "applyPlanToSchedule":
+        case "applyPlanToSchedule": {
+          const appliedIds = toolPart.output?.workoutIds as
+            | string[]
+            | undefined;
+          if (appliedIds?.length && pendingPlanToolCallId.current) {
+            // Store under the generateTrainingPlan toolCallId so the card can trigger undo
+            undoMap.current.set(pendingPlanToolCallId.current, {
+              type: "plan",
+              workoutIds: appliedIds,
+            });
+            pendingPlanToolCallId.current = null;
+          }
           onPlanApplied();
           break;
+        }
       }
     }
   }
@@ -241,6 +262,16 @@ export function useAIChat({
         removePlaygroundItem(entry.id);
         notifySilently(`User undid the last created playground item`);
         break;
+      case "plan":
+        await undoPlan(entry.workoutIds);
+        for (const workoutId of entry.workoutIds) {
+          evictWorkoutFromContext(workoutId);
+        }
+        onWorkoutDeleted();
+        notifySilently(
+          `User undid the applied training plan (${entry.workoutIds.length} workouts removed)`,
+        );
+        break;
     }
 
     undoMap.current.delete(toolCallId);
@@ -252,8 +283,23 @@ export function useAIChat({
     pendingActions.push(text);
   }
 
-  function handleApplyPlan() {
-    sendMessage({ text: "Apply the training plan to my schedule" });
+  function handleApplyPlan(
+    editedPlan?: TrainingPlan,
+    generateToolCallId?: string,
+  ) {
+    if (generateToolCallId) {
+      pendingPlanToolCallId.current = generateToolCallId;
+    }
+    if (editedPlan) {
+      pendingEditedPlanWeeks = JSON.stringify(editedPlan.weeks);
+    }
+    const weekCount = editedPlan?.weeks.length ?? 1;
+    const weekRange = editedPlan
+      ? editedPlan.weeks.map((w) => w.weekStartDate).join(" → ")
+      : "";
+    sendMessage({
+      text: `Apply the training plan to my schedule — ${weekCount} week${weekCount > 1 ? "s" : ""} starting ${weekRange}`,
+    });
   }
 
   return {
