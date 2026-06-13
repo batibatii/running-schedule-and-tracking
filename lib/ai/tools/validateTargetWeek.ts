@@ -1,6 +1,6 @@
 import { getWeekStartDate, formatDateToISO } from "@/lib/utils/date";
 
-const MAX_WEEKS_AHEAD = 12;
+export const MAX_WEEKS_AHEAD = 12;
 
 export function validateWeekStartDate(targetDate: string): string {
   const target = new Date(targetDate + "T00:00:00");

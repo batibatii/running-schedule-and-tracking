@@ -1,4 +1,5 @@
 import { SPORTS, WORKOUT_TYPES, DAYS_OF_WEEK } from "@/types/workout";
+import { MAX_WEEKS_AHEAD } from "@/lib/ai/tools/validateTargetWeek";
 import type { WeekContext } from "@/types/ai";
 
 export function buildSystemPrompt(
@@ -32,7 +33,7 @@ ${workoutSummary}
 - Create combined workout cards in the playground using the createPlaygroundWorkout tool (multi-attribute, no day specified)
 - Create single workout building blocks (pills) using the createPill tool (single attribute or user says "pill")
 - Remove existing workouts using the removeWorkout tool (use the workout ID from the list above)
-- Generate training plans (1–12 weeks) using the generateTrainingPlan tool with startWeekDate and numberOfWeeks
+- Generate training plans (1–${MAX_WEEKS_AHEAD} weeks) using the generateTrainingPlan tool with startWeekDate and numberOfWeeks
 - Apply generated plans to the schedule using the applyPlanToSchedule tool
 
 ## Rules
@@ -59,8 +60,8 @@ ${workoutSummary}
 - Training plan week targeting:
   - Default: startWeekDate = current week's Monday (${weekStartDate}), numberOfWeeks = 1
   - "next week" → startWeekDate = Monday after ${weekStartDate}. "week of June 22" → startWeekDate = that Monday
-  - "4-week plan" / "month plan" → numberOfWeeks = 4. "marathon prep" / "12-week plan" → numberOfWeeks = 12
-  - Plans cannot target past weeks. Maximum 12 weeks into the future from current week
+  - "4-week plan" / "month plan" → numberOfWeeks = 4. "marathon prep" / "${MAX_WEEKS_AHEAD}-week plan" → numberOfWeeks = ${MAX_WEEKS_AHEAD}
+  - Plans cannot target past weeks. Maximum ${MAX_WEEKS_AHEAD} weeks into the future from current week
   - startWeekDate must always be a Monday in ISO format (YYYY-MM-DD)
 - For training plans, consider the user's existing workouts to avoid conflicts
 ${recentActions?.length ? `\n## Recent user actions (already completed — do NOT repeat these with tools, just be aware)\n${recentActions.map((a) => `- ${a}`).join("\n")}` : ""}

@@ -264,29 +264,26 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const renderDragOverlay = () => {
     if (!activeId) return null;
 
-    if (activeDragType === "pill") {
-      const pill = pills.find((p) => p.id === activeId);
-      if (pill) return <PillChip pill={pill} isOverlay />;
-    }
-
-    if (activeDragType === "group") {
-      const group = groups.find((g) => g.id === activeId);
-      if (group) return <PillGroupCard group={group} isOverlay />;
-    }
-
-    if (activeDragType === "preset") {
-      const preset = presets.find(
-        (presetItem) => `preset-${presetItem.id}` === activeId,
-      );
-      if (preset) return <PresetChip preset={preset} isOverlay />;
-    }
-
-    if (activeDragType === "activity") {
-      const activity = standaloneActivities.find(
-        (activityItem) => `activity-${activityItem.id}` === activeId,
-      );
-      if (activity) {
-        return (
+    switch (activeDragType) {
+      case "pill": {
+        const pill = pills.find((p) => p.id === activeId);
+        return pill ? <PillChip pill={pill} isOverlay /> : null;
+      }
+      case "group": {
+        const group = groups.find((g) => g.id === activeId);
+        return group ? <PillGroupCard group={group} isOverlay /> : null;
+      }
+      case "preset": {
+        const preset = presets.find(
+          (presetItem) => `preset-${presetItem.id}` === activeId,
+        );
+        return preset ? <PresetChip preset={preset} isOverlay /> : null;
+      }
+      case "activity": {
+        const activity = standaloneActivities.find(
+          (activityItem) => `activity-${activityItem.id}` === activeId,
+        );
+        return activity ? (
           <div style={{ cursor: "grabbing" }}>
             <WorkoutCard
               kind="activity"
@@ -296,30 +293,27 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
               duration={activity.duration}
             />
           </div>
+        ) : null;
+      }
+      default: {
+        const workout = displayWorkouts.find(
+          (workoutItem) => workoutItem.id === activeId,
         );
+        return workout ? (
+          <div style={{ cursor: "grabbing" }}>
+            <WorkoutCard
+              kind="planned"
+              sport={workout.sport}
+              workoutType={workout.workoutType}
+              heartRateZone={workout.heartRateZone}
+              distance={workout.distance ?? 0}
+              duration={workout.duration}
+              completed={workout.completed}
+            />
+          </div>
+        ) : null;
       }
     }
-
-    const workout = displayWorkouts.find(
-      (workoutItem) => workoutItem.id === activeId,
-    );
-    if (workout) {
-      return (
-        <div style={{ cursor: "grabbing" }}>
-          <WorkoutCard
-            kind="planned"
-            sport={workout.sport}
-            workoutType={workout.workoutType}
-            heartRateZone={workout.heartRateZone}
-            distance={workout.distance ?? 0}
-            duration={workout.duration}
-            completed={workout.completed}
-          />
-        </div>
-      );
-    }
-
-    return null;
   };
 
   return (
@@ -572,6 +566,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
               onApplyPlan={aiChat.handleApplyPlan}
               onUndo={aiChat.undoToolAction}
               activeWorkoutIds={activeWorkoutIds}
+              appliedPlanIds={aiChat.appliedPlanIds}
               error={aiChat.error}
             />
           </AccordionPanel>

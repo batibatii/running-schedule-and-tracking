@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import type { WeekContext, TrainingPlan } from "@/types/ai";
+import { asResolvedToolPart } from "@/types/ai";
+import { formatDateDisplay } from "@/lib/utils/date";
 import type {
   PillFieldType,
   PillGroup,
@@ -136,6 +138,8 @@ export function useAIChat({
   // Links the generateTrainingPlan toolCallId to the subsequent applyPlanToSchedule result
   const pendingPlanToolCallId = useRef<string | null>(null);
 
+  const [appliedPlanIds, setAppliedPlanIds] = useState<Set<string>>(new Set());
+
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     onFinish: ({ message }) => {
@@ -145,14 +149,8 @@ export function useAIChat({
 
   function processToolResults(message: UIMessage) {
     for (const part of message.parts) {
-      if (!part.type.startsWith("tool-")) continue;
-
-      // Cast to access toolCallId, state, and output on tool invocation parts
-      const toolPart = part as unknown as {
-        toolCallId: string;
-        state: string;
-        output?: Record<string, unknown>;
-      };
+      const toolPart = asResolvedToolPart(part);
+      if (!toolPart) continue;
       if (toolPart.state !== "output-available") continue;
       if (processedToolCalls.current.has(toolPart.toolCallId)) continue;
       processedToolCalls.current.add(toolPart.toolCallId);
@@ -232,13 +230,15 @@ export function useAIChat({
           const appliedIds = toolPart.output?.workoutIds as
             | string[]
             | undefined;
-          if (appliedIds?.length && pendingPlanToolCallId.current) {
+          const originToolCallId = pendingPlanToolCallId.current;
+          if (appliedIds?.length && originToolCallId) {
             // Store under the generateTrainingPlan toolCallId so the card can trigger undo
-            undoMap.current.set(pendingPlanToolCallId.current, {
+            undoMap.current.set(originToolCallId, {
               type: "plan",
               workoutIds: appliedIds,
             });
             pendingPlanToolCallId.current = null;
+            setAppliedPlanIds((prev) => new Set(prev).add(originToolCallId));
           }
           onPlanApplied();
           break;
@@ -295,7 +295,11 @@ export function useAIChat({
     }
     const weekCount = editedPlan?.weeks.length ?? 1;
     const weekRange = editedPlan
-      ? editedPlan.weeks.map((w) => w.weekStartDate).join(" → ")
+      ? editedPlan.weeks
+          .map((w) =>
+            formatDateDisplay(new Date(w.weekStartDate + "T00:00:00")),
+          )
+          .join(" → ")
       : "";
     sendMessage({
       text: `Apply the training plan to my schedule — ${weekCount} week${weekCount > 1 ? "s" : ""} starting ${weekRange}`,
@@ -312,5 +316,6 @@ export function useAIChat({
     undoToolAction,
     notifySilently,
     evictWorkout: evictWorkoutFromContext,
+    appliedPlanIds,
   };
 }

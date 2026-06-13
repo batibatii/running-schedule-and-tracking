@@ -68,8 +68,9 @@ export function buildPlanPrompt(context: PlanPromptContext): string {
 
   const preferences = [
     focus && `Training focus: ${focus}`,
-    weeklyDistanceTarget && `Target weekly distance: ${weeklyDistanceTarget}km`,
-    maxDaysPerWeek && `Maximum training days: ${maxDaysPerWeek}`,
+    weeklyDistanceTarget != null &&
+      `Target weekly distance: ${weeklyDistanceTarget}km`,
+    maxDaysPerWeek != null && `Maximum training days: ${maxDaysPerWeek}`,
   ]
     .filter(Boolean)
     .join("\n");

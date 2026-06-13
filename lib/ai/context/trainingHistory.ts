@@ -1,5 +1,5 @@
 import { getWorkouts } from "@/lib/dal/workout";
-import { formatDateToISO } from "@/lib/utils/date";
+import { getWeekStartDate, formatDateToISO } from "@/lib/utils/date";
 
 const HISTORY_WEEKS = 4;
 
@@ -14,37 +14,32 @@ export interface WeekHistory {
 export async function getRecentWorkoutHistory(
   userId: string,
 ): Promise<WeekHistory[]> {
-  const history: WeekHistory[] = [];
+  const weekMondays = Array.from({ length: HISTORY_WEEKS }, (_, i) =>
+    formatDateToISO(getWeekStartDate(-(i + 1))),
+  );
 
-  for (let i = 1; i <= HISTORY_WEEKS; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - i * 7);
-    // Rewind to Monday of that week
-    const dayOfWeek = date.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    date.setDate(date.getDate() + mondayOffset);
+  const results = await Promise.all(
+    weekMondays.map((weekStart) => getWorkouts(userId, weekStart)),
+  );
 
-    const weekStart = formatDateToISO(date);
-    const workouts = await getWorkouts(userId, weekStart);
-
-    if (workouts.length === 0) continue;
-
-    history.push({
-      weekStartDate: weekStart,
-      totalDistance: workouts.reduce(
-        (sum, workout) => sum + (Number(workout.distance) || 0),
-        0,
-      ),
-      totalDuration: workouts.reduce(
-        (sum, workout) => sum + (Number(workout.duration) || 0),
-        0,
-      ),
-      sessionCount: workouts.length,
-      workoutTypes: [
-        ...new Set(workouts.map((workout) => workout.workoutType)),
-      ],
-    });
-  }
-
-  return history;
+  return results
+    .map((workouts, index) => {
+      if (workouts.length === 0) return null;
+      return {
+        weekStartDate: weekMondays[index],
+        totalDistance: workouts.reduce(
+          (sum, workout) => sum + (Number(workout.distance) || 0),
+          0,
+        ),
+        totalDuration: workouts.reduce(
+          (sum, workout) => sum + (Number(workout.duration) || 0),
+          0,
+        ),
+        sessionCount: workouts.length,
+        workoutTypes: [
+          ...new Set(workouts.map((workout) => workout.workoutType)),
+        ],
+      };
+    })
+    .filter((week): week is WeekHistory => week !== null);
 }

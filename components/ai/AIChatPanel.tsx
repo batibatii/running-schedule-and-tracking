@@ -13,6 +13,7 @@ import { SuggestedPrompts } from "@/components/ai/SuggestedPrompts";
 import { WorkoutPreviewCard } from "@/components/ai/WorkoutPreviewCard";
 import { TrainingPlanCard } from "@/components/ai/TrainingPlanCard";
 import type { TrainingPlan } from "@/lib/ai/schemas/trainingPlan";
+import { asResolvedToolPart } from "@/types/ai";
 import type {
   Sport,
   WorkoutType,
@@ -27,6 +28,7 @@ interface AIChatPanelProps {
   onApplyPlan: (plan: TrainingPlan, generateToolCallId: string) => void;
   onUndo: (toolCallId: string) => Promise<boolean>;
   activeWorkoutIds: Set<string>;
+  appliedPlanIds: Set<string>;
   error?: Error | undefined;
 }
 
@@ -39,10 +41,17 @@ export function AIChatPanel({
   onApplyPlan,
   onUndo,
   activeWorkoutIds,
+  appliedPlanIds,
   error,
 }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const [planStates, setPlanStates] = useState<Record<string, PlanState>>({});
+
+  function getPlanState(toolCallId: string): PlanState {
+    if (planStates[toolCallId] === "undone") return "undone";
+    if (appliedPlanIds.has(toolCallId)) return "applied";
+    return planStates[toolCallId] ?? "idle";
+  }
 
   const isLoading = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
@@ -62,7 +71,6 @@ export function AIChatPanel({
   function handleApplyPlan(toolCallId: string, plan: TrainingPlan) {
     setPlanStates((prev) => ({ ...prev, [toolCallId]: "applying" }));
     onApplyPlan(plan, toolCallId);
-    setPlanStates((prev) => ({ ...prev, [toolCallId]: "applied" }));
   }
 
   async function handleUndoPlan(toolCallId: string) {
@@ -86,7 +94,7 @@ export function AIChatPanel({
               <MessageRenderer
                 key={message.id}
                 message={message}
-                planStates={planStates}
+                getPlanState={getPlanState}
                 onApplyPlan={handleApplyPlan}
                 onUndoPlan={handleUndoPlan}
                 onUndo={onUndo}
@@ -159,7 +167,7 @@ function TrainingPlanSkeleton() {
 
 interface MessageRendererProps {
   message: UIMessage;
-  planStates: Record<string, PlanState>;
+  getPlanState: (toolCallId: string) => PlanState;
   onApplyPlan: (toolCallId: string, plan: TrainingPlan) => void;
   onUndoPlan: (toolCallId: string) => void;
   onUndo: (toolCallId: string) => Promise<boolean>;
@@ -172,7 +180,7 @@ function getToolName(partType: string): string | null {
 
 function MessageRenderer({
   message,
-  planStates,
+  getPlanState,
   onApplyPlan,
   onUndoPlan,
   onUndo,
@@ -203,11 +211,8 @@ function MessageRenderer({
 
       {/* Render tool invocations inline */}
       {toolParts.map((part) => {
-        const toolPart = part as unknown as {
-          toolCallId: string;
-          state: string;
-          output?: Record<string, unknown>;
-        };
+        const toolPart = asResolvedToolPart(part);
+        if (!toolPart) return null;
 
         const toolName = getToolName(part.type);
 
@@ -254,13 +259,12 @@ function MessageRenderer({
 
         if (toolName === "generateTrainingPlan" && output?.plan) {
           const plan = output.plan as TrainingPlan;
-          const planState = planStates[toolCallId] ?? "idle";
+          const planState = getPlanState(toolCallId);
           return (
             <TrainingPlanCard
               key={toolCallId}
               plan={plan}
               onApply={(editedPlan) => onApplyPlan(toolCallId, editedPlan)}
-              onDismiss={() => {}}
               onUndoPlan={() => onUndoPlan(toolCallId)}
               isApplying={planState === "applying"}
               isApplied={planState === "applied"}

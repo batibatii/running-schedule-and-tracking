@@ -8,7 +8,10 @@ import {
 import { getStravaTokensByUserId } from "@/lib/dal/strava";
 import { getRecentWorkoutHistory } from "@/lib/ai/context/trainingHistory";
 import { buildPlanPrompt } from "@/lib/ai/prompts/trainingPlan";
-import { validateWeekStartDate } from "@/lib/ai/tools/validateTargetWeek";
+import {
+  validateWeekStartDate,
+  MAX_WEEKS_AHEAD,
+} from "@/lib/ai/tools/validateTargetWeek";
 import { formatDateToISO } from "@/lib/utils/date";
 import type { WeekContext } from "@/types/ai";
 
@@ -39,10 +42,10 @@ const parametersSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(12)
+    .max(MAX_WEEKS_AHEAD)
     .optional()
     .describe(
-      "How many weeks the plan should cover (1–12). Defaults to 1 for single-week plans.",
+      `How many weeks the plan should cover (1–${MAX_WEEKS_AHEAD}). Defaults to 1 for single-week plans.`,
     ),
 });
 
@@ -54,8 +57,7 @@ export function generateTrainingPlanTool(
   weekContext: WeekContext,
 ) {
   return tool<Params, Result>({
-    description:
-      "Generate a structured training plan (1–12 weeks) based on the user's recent training history and preferences. Use when the user asks for a plan, weekly schedule, or multi-week training block.",
+    description: `Generate a structured training plan (1–${MAX_WEEKS_AHEAD} weeks) based on the user's recent training history and preferences. Use when the user asks for a plan, weekly schedule, or multi-week training block.`,
     inputSchema: zodSchema(parametersSchema),
     execute: async ({
       focus,

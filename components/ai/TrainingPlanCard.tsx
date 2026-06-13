@@ -72,7 +72,6 @@ function buildDayLabel(day: PlannedDay): string {
 interface TrainingPlanCardProps {
   plan: TrainingPlan;
   onApply: (editedPlan: TrainingPlan) => void;
-  onDismiss: () => void;
   onUndoPlan?: () => void;
   isApplying: boolean;
   isApplied: boolean;
@@ -328,7 +327,6 @@ function WeekSection({
 export function TrainingPlanCard({
   plan,
   onApply,
-  onDismiss,
   onUndoPlan,
   isApplying,
   isApplied,
@@ -440,10 +438,7 @@ export function TrainingPlanCard({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setDismissed(true);
-                  onDismiss();
-                }}
+                onClick={() => setDismissed(true)}
                 disabled={isApplying}
               >
                 Dismiss

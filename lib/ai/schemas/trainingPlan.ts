@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SPORTS, WORKOUT_TYPES, DAYS_OF_WEEK } from "@/types/workout";
+import { MAX_WEEKS_AHEAD } from "@/lib/ai/tools/validateTargetWeek";
 
 export const plannedDaySchema = z.object({
   dayOfWeek: z.enum(DAYS_OF_WEEK),
@@ -26,7 +27,7 @@ export const trainingPlanSchema = z.object({
   planSummary: z.string(),
   totalDistance: z.number(),
   totalSessions: z.number(),
-  weeks: z.array(weekPlanSchema).min(1).max(12),
+  weeks: z.array(weekPlanSchema).min(1).max(MAX_WEEKS_AHEAD),
   reasoning: z.string(),
 });
 
