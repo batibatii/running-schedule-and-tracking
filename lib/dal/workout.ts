@@ -97,6 +97,21 @@ export async function deleteWorkout(workoutId: string, userId: string) {
     );
 }
 
+export async function deleteWorkoutsBatch(
+  workoutIds: string[],
+  userId: string,
+) {
+  if (workoutIds.length === 0) return;
+  await db
+    .delete(weeklyWorkouts)
+    .where(
+      and(
+        inArray(weeklyWorkouts.id, workoutIds),
+        eq(weeklyWorkouts.userId, userId),
+      ),
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Reordering within a day
 // ---------------------------------------------------------------------------

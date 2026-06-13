@@ -6,6 +6,7 @@ import {
   createWorkout,
   updateWorkout,
   deleteWorkout,
+  deleteWorkoutsBatch,
   setWorkoutManualStatus,
   resetWorkoutToPlanned,
   reorderWorkoutsInDay,
@@ -184,6 +185,16 @@ export async function deleteWorkoutAction(workoutId: string) {
     await deleteWorkout(workoutId, user.id);
   } catch (error) {
     console.error("[deleteWorkoutAction]", extractErrorMessage(error));
+    throw error;
+  }
+}
+
+export async function deleteWorkoutsBatchAction(workoutIds: string[]) {
+  try {
+    const user = await requireAuth();
+    await deleteWorkoutsBatch(workoutIds, user.id);
+  } catch (error) {
+    console.error("[deleteWorkoutsBatchAction]", extractErrorMessage(error));
     throw error;
   }
 }

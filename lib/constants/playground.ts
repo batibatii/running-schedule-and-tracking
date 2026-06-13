@@ -1,4 +1,5 @@
-export const PLAYGROUND_CAPACITY = 40;
+export const PLAYGROUND_CAPACITY = 12;
+export const PRESET_CAPACITY = 8;
 
 export const CAPACITY_WARNING_THRESHOLD = 0.71;
 export const CAPACITY_CRITICAL_THRESHOLD = 0.91;

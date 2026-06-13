@@ -41,7 +41,6 @@ export function WeatherPanel({
 
   const panelLeft = bounds.contentRight + CONTENT_GAP;
   const panelWidth = bounds.viewportWidth - panelLeft - CONTENT_GAP;
-  const panelHeight = bounds.gridBottom - bounds.statsTop;
 
   return (
     <AnimatePresence>
@@ -50,9 +49,9 @@ export function WeatherPanel({
           className="border-line bg-surface fixed z-10 flex flex-col overflow-hidden rounded-3xl border"
           style={{
             top: bounds.statsTop,
+            bottom: bounds.viewportHeight - bounds.gridBottom,
             left: panelLeft,
             width: Math.min(panelWidth, 372),
-            height: panelHeight,
             boxShadow: "0 18px 48px rgba(34,25,18,0.18)",
           }}
           variants={panelVariants}

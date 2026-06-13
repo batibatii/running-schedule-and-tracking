@@ -60,6 +60,7 @@ interface UseDragDropManagerProps {
   removePreset: (id: string) => void;
   restorePreset: (preset: Preset) => void;
   refreshWorkouts: () => void;
+  onWorkoutTrashed?: (workoutId: string, workoutLabel: string) => void;
 }
 
 //Decompose a workout into individual pills.
@@ -151,6 +152,7 @@ export function useDragDropManager({
   removePreset,
   restorePreset,
   refreshWorkouts,
+  onWorkoutTrashed,
 }: UseDragDropManagerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<DragItemType | null>(
@@ -564,6 +566,11 @@ export function useDragDropManager({
         }, "Failed to delete workout");
         if (!deleteResult) return;
         refreshWorkouts();
+
+        const workoutLabel = workout
+          ? `${workout.dayOfWeek} ${workout.sport} ${workout.workoutType} ${workout.distance ?? ""}km`.trim()
+          : "a workout";
+        onWorkoutTrashed?.(workoutId, workoutLabel);
 
         toast.success(
           `"${workout?.title || workout?.workoutType || "Workout"}" deleted`,

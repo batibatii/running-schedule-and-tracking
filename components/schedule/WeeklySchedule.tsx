@@ -9,8 +9,10 @@ import {
   formatDateDisplay,
   formatDateToISO,
   getDayName,
+  getDayOfWeek,
 } from "@/lib/utils/date";
 import { DAYS_OF_WEEK, DayOfWeek, Workout } from "@/types/workout";
+import type { WorkoutSummary } from "@/types/ai";
 import type {
   ScheduleItem,
   ScheduleWorkout,
@@ -24,6 +26,10 @@ import { SortableDay } from "./SortableDay";
 import { SortableWorkoutCard } from "./SortableWorkoutCard";
 import { DraggableActivityCard } from "./DraggableActivityCard";
 import { PlaygroundArea } from "@/components/playground/PlaygroundArea";
+import { AccordionPanel } from "@/components/ui/accordion-panel";
+import { AIChatPanel } from "@/components/ai/AIChatPanel";
+import { useAIChat } from "@/hooks/useAIChat";
+import { Sparkles } from "lucide-react";
 import { PillChip } from "@/components/playground/PillChip";
 import { PillGroupCard } from "@/components/playground/PillGroupCard";
 import { PresetChip } from "@/components/playground/PresetChip";
@@ -38,6 +44,7 @@ import {
   createWorkoutAction,
   updateWorkoutAction,
   deleteWorkoutAction,
+  deleteWorkoutsBatchAction,
 } from "@/app/actions/workout";
 import { deleteActivityAction } from "@/app/actions/strava";
 import { withToastError } from "@/lib/utils/errorClient";
@@ -69,6 +76,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [viewingActivity, setViewingActivity] =
     useState<StandaloneActivity | null>(null);
 
+  // Refs for AI chat — lets useDragDropManager inform the LLM without hook ordering issues
+  const aiNotifyRef = useRef<(text: string) => void>(() => {});
+  const aiEvictRef = useRef<(id: string) => void>(() => {});
+
   // ── Weather ──
   const { statsRef, gridRef, bounds: weatherBounds } = useWeatherBounds();
   const weather = useWeather();
@@ -94,7 +105,6 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     refreshWorkouts();
   }, [weekStartDateISO]);
 
-  // Re-fetch when sync completes (triggered from TopBar)
   const hasMountedSync = useRef(false);
   useEffect(() => {
     if (!hasMountedSync.current) {
@@ -156,6 +166,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     removePreset,
     restorePreset,
     refreshWorkouts,
+    onWorkoutTrashed: (id, label) => {
+      aiEvictRef.current(id);
+      aiNotifyRef.current(`User deleted ${label} from the schedule`);
+    },
   });
 
   const handleOpenDialog = (day: DayOfWeek, workout?: Workout) => {
@@ -206,6 +220,40 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
 
   const displayWorkouts = getDisplayWorkouts();
 
+  // ── AI Chat ──
+  const currentDay = getDayOfWeek(new Date());
+  const existingWorkouts: WorkoutSummary[] = displayWorkouts.map((workout) => ({
+    id: workout.id,
+    day: workout.dayOfWeek,
+    sport: workout.sport,
+    workoutType: workout.workoutType,
+    distance: workout.distance,
+    completed: workout.completed,
+  }));
+
+  const activeWorkoutIds = new Set(existingWorkouts.map((w) => w.id));
+
+  const aiChat = useAIChat({
+    weekContext: {
+      weekStartDate: weekStartDateISO,
+      todayDate: formatDateToISO(new Date()),
+      currentDay,
+      existingWorkouts,
+    },
+    onWorkoutCreated: refreshWorkouts,
+    onWorkoutDeleted: refreshWorkouts,
+    onPlanApplied: refreshWorkouts,
+    addExistingPill,
+    addGroup,
+    removePlaygroundItem: removeItem,
+    undoWorkout: deleteWorkoutAction,
+    undoPlan: deleteWorkoutsBatchAction,
+  });
+
+  // Keep refs in sync so DnD trash handler can notify the LLM
+  aiNotifyRef.current = aiChat.notifySilently;
+  aiEvictRef.current = aiChat.evictWorkout;
+
   // Determine which day the currently dragged workout belongs to
   const activeDragSourceDay =
     activeId && activeDragType === "workout"
@@ -216,29 +264,26 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const renderDragOverlay = () => {
     if (!activeId) return null;
 
-    if (activeDragType === "pill") {
-      const pill = pills.find((p) => p.id === activeId);
-      if (pill) return <PillChip pill={pill} isOverlay />;
-    }
-
-    if (activeDragType === "group") {
-      const group = groups.find((g) => g.id === activeId);
-      if (group) return <PillGroupCard group={group} isOverlay />;
-    }
-
-    if (activeDragType === "preset") {
-      const preset = presets.find(
-        (presetItem) => `preset-${presetItem.id}` === activeId,
-      );
-      if (preset) return <PresetChip preset={preset} isOverlay />;
-    }
-
-    if (activeDragType === "activity") {
-      const activity = standaloneActivities.find(
-        (activityItem) => `activity-${activityItem.id}` === activeId,
-      );
-      if (activity) {
-        return (
+    switch (activeDragType) {
+      case "pill": {
+        const pill = pills.find((p) => p.id === activeId);
+        return pill ? <PillChip pill={pill} isOverlay /> : null;
+      }
+      case "group": {
+        const group = groups.find((g) => g.id === activeId);
+        return group ? <PillGroupCard group={group} isOverlay /> : null;
+      }
+      case "preset": {
+        const preset = presets.find(
+          (presetItem) => `preset-${presetItem.id}` === activeId,
+        );
+        return preset ? <PresetChip preset={preset} isOverlay /> : null;
+      }
+      case "activity": {
+        const activity = standaloneActivities.find(
+          (activityItem) => `activity-${activityItem.id}` === activeId,
+        );
+        return activity ? (
           <div style={{ cursor: "grabbing" }}>
             <WorkoutCard
               kind="activity"
@@ -248,30 +293,27 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
               duration={activity.duration}
             />
           </div>
+        ) : null;
+      }
+      default: {
+        const workout = displayWorkouts.find(
+          (workoutItem) => workoutItem.id === activeId,
         );
+        return workout ? (
+          <div style={{ cursor: "grabbing" }}>
+            <WorkoutCard
+              kind="planned"
+              sport={workout.sport}
+              workoutType={workout.workoutType}
+              heartRateZone={workout.heartRateZone}
+              distance={workout.distance ?? 0}
+              duration={workout.duration}
+              completed={workout.completed}
+            />
+          </div>
+        ) : null;
       }
     }
-
-    const workout = displayWorkouts.find(
-      (workoutItem) => workoutItem.id === activeId,
-    );
-    if (workout) {
-      return (
-        <div style={{ cursor: "grabbing" }}>
-          <WorkoutCard
-            kind="planned"
-            sport={workout.sport}
-            workoutType={workout.workoutType}
-            heartRateZone={workout.heartRateZone}
-            distance={workout.distance ?? 0}
-            duration={workout.duration}
-            completed={workout.completed}
-          />
-        </div>
-      );
-    }
-
-    return null;
   };
 
   return (
@@ -485,17 +527,50 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
           )}
         </WeatherPanel>
 
-        {/* Playground + Presets */}
-        <PlaygroundArea
-          items={items}
-          onAddPill={addPill}
-          isDragActive={activeId !== null}
-          activeId={activeId}
-          activeDragType={activeDragType}
-          remainingSlots={remainingSlots}
-          onSaveAsPreset={addPreset}
-          presets={presets}
-        />
+        {/* Playground + AI Chat — side-by-side accordion panels */}
+        <div className="grid grid-cols-[55fr_45fr] items-start gap-4">
+          <AccordionPanel
+            title="Playground"
+            label="Workout builder"
+            storageKey="playground"
+            defaultOpen={true}
+          >
+            <PlaygroundArea
+              items={items}
+              onAddPill={addPill}
+              isDragActive={activeId !== null}
+              activeId={activeId}
+              activeDragType={activeDragType}
+              remainingSlots={remainingSlots}
+              onSaveAsPreset={addPreset}
+              presets={presets}
+            />
+          </AccordionPanel>
+
+          <AccordionPanel
+            title={
+              <>
+                Ask the{" "}
+                <em className="text-primary text-2xl italic">assistant</em>
+              </>
+            }
+            label="AI coach"
+            icon={<Sparkles className="size-4" />}
+            storageKey="ai-chat"
+            defaultOpen={false}
+          >
+            <AIChatPanel
+              messages={aiChat.messages}
+              status={aiChat.status}
+              sendMessage={aiChat.sendMessage}
+              onApplyPlan={aiChat.handleApplyPlan}
+              onUndo={aiChat.undoToolAction}
+              activeWorkoutIds={activeWorkoutIds}
+              appliedPlanIds={aiChat.appliedPlanIds}
+              error={aiChat.error}
+            />
+          </AccordionPanel>
+        </div>
 
         <AddWorkoutDialog
           open={isDialogOpen}
