@@ -251,8 +251,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   });
 
   // Keep refs in sync so DnD trash handler can notify the LLM
-  aiNotifyRef.current = aiChat.notifySilently;
-  aiEvictRef.current = aiChat.evictWorkout;
+  useEffect(() => {
+    aiNotifyRef.current = aiChat.notifySilently;
+    aiEvictRef.current = aiChat.evictWorkout;
+  });
 
   // Determine which day the currently dragged workout belongs to
   const activeDragSourceDay =

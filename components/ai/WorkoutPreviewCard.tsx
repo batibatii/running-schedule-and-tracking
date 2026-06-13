@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,11 +56,10 @@ export function WorkoutPreviewCard({
   gone = false,
 }: WorkoutPreviewCardProps) {
   const [undone, setUndone] = useState(false);
-  const [wasActive, setWasActive] = useState(!gone);
-
-  useEffect(() => {
-    if (!gone) setWasActive(true);
-  }, [gone]);
+  // Initialized once at mount — the card is always active when first rendered
+  // (it's only shown immediately after a workout is created). gone only ever
+  // transitions false → true, so we never need to re-detect activation.
+  const [wasActive] = useState(!gone);
 
   const faded = undone || (wasActive && gone);
 
