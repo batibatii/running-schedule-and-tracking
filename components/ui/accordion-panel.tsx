@@ -109,10 +109,28 @@ export function AccordionPanel({
           height: isOpen ? "auto" : 0,
           opacity: isOpen ? 1 : 0,
         }}
-        transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
+        transition={
+          isOpen
+            ? { type: "spring", stiffness: 300, damping: 24 }
+            : { duration: 0.2, ease: [0.22, 0.9, 0.32, 1] }
+        }
         className="overflow-hidden"
       >
-        <div className="px-4.5 pb-4.5">{children}</div>
+        <motion.div
+          initial={false}
+          animate={{
+            y: isOpen ? 0 : -8,
+            scale: isOpen ? 1 : 0.98,
+          }}
+          transition={
+            isOpen
+              ? { type: "spring", stiffness: 300, damping: 24 }
+              : { duration: 0.2, ease: "easeIn" }
+          }
+          className="origin-top px-4.5 pb-4.5"
+        >
+          {children}
+        </motion.div>
       </motion.div>
     </section>
   );

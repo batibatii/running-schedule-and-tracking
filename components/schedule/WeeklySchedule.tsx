@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
@@ -64,12 +65,19 @@ import {
   pointerWithin,
 } from "@dnd-kit/core";
 
+const weekSlideVariants = {
+  enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir * -48, opacity: 0 }),
+};
+
 interface WeeklyScheduleProps {
   syncTrigger?: number;
 }
 
 export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [weekDirection, setWeekDirection] = useState<1 | -1>(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>("monday");
@@ -144,6 +152,8 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     activeId,
     activeDragType,
     isOverTrash,
+    trashAnimating,
+    mergeAnimatingIds,
     pendingChanges,
     handleDragStart,
     handleDragOver,
@@ -169,6 +179,12 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     onWorkoutTrashed: (id, label) => {
       aiEvictRef.current(id);
       aiNotifyRef.current(`User deleted ${label} from the schedule`);
+    },
+    onTrashAnimationStart: () => {
+      setOverlaySnapshot(renderDragOverlay());
+    },
+    onTrashAnimationEnd: () => {
+      setOverlaySnapshot(null);
     },
   });
 
@@ -318,6 +334,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
     }
   };
 
+  // Snapshot the overlay content when trash animation starts so it survives
+  // data mutations from refreshWorkouts() during the shrink animation.
+  const [overlaySnapshot, setOverlaySnapshot] = useState<ReactNode>(null);
+
   return (
     <DndContext
       sensors={sensors}
@@ -343,7 +363,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setWeekOffset((prev) => prev - 1)}
+              onClick={() => {
+                setWeekDirection(-1);
+                setWeekOffset((prev) => prev - 1);
+              }}
               className="border-line bg-surface hover:bg-bg-soft rounded-full transition-shadow hover:shadow-[inset_0_0_0_4px_white] active:scale-105"
               aria-label="Previous week"
             >
@@ -351,7 +374,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setWeekOffset(0)}
+              onClick={() => {
+                setWeekDirection(weekOffset > 0 ? -1 : 1);
+                setWeekOffset(0);
+              }}
               className="border-line bg-surface hover:bg-bg-soft rounded-full px-4 text-[13px] hover:shadow-lg active:translate-y-0.5 active:shadow-[inset_0_0_0_3px_white]"
             >
               Today
@@ -359,7 +385,10 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setWeekOffset((prev) => prev + 1)}
+              onClick={() => {
+                setWeekDirection(1);
+                setWeekOffset((prev) => prev + 1);
+              }}
               className="border-line bg-surface hover:bg-bg-soft rounded-full transition-shadow hover:shadow-[inset_0_0_0_4px_white] active:scale-105"
               aria-label="Next week"
             >
@@ -387,118 +416,156 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
         )}
 
         {/* Stats strip */}
-        <div ref={statsRef}>
-          <StatsStrip workouts={displayWorkouts} />
+        <div ref={statsRef} className="relative overflow-hidden">
+          <AnimatePresence mode="popLayout" custom={weekDirection}>
+            <motion.div
+              key={weekStartDateISO}
+              custom={weekDirection}
+              variants={weekSlideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
+            >
+              <StatsStrip workouts={displayWorkouts} />
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* 7-day grid */}
-        <div ref={gridRef} className="grid grid-cols-7 items-start gap-2.5">
-          {DAYS_OF_WEEK.map((day, index) => {
-            const date = weekDates[index];
-            const isToday =
-              formatDateToISO(date) === formatDateToISO(new Date());
-            const dayWorkouts = displayWorkouts.filter(
-              (workout) =>
-                workout.dayOfWeek === day &&
-                workout.weekStartDate === weekStartDateISO,
-            );
-            const dayActivities = standaloneActivities.filter(
-              (activity) => activity.dayOfWeek === day,
-            );
+        <div ref={gridRef} className="relative overflow-hidden">
+          <AnimatePresence mode="popLayout" custom={weekDirection}>
+            <motion.div
+              key={weekStartDateISO}
+              custom={weekDirection}
+              variants={weekSlideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
+              className="grid grid-cols-7 items-start gap-2.5"
+            >
+              {DAYS_OF_WEEK.map((day, index) => {
+                const date = weekDates[index];
+                const isToday =
+                  formatDateToISO(date) === formatDateToISO(new Date());
+                const dayWorkouts = displayWorkouts.filter(
+                  (workout) =>
+                    workout.dayOfWeek === day &&
+                    workout.weekStartDate === weekStartDateISO,
+                );
+                const dayActivities = standaloneActivities.filter(
+                  (activity) => activity.dayOfWeek === day,
+                );
 
-            return (
-              <div
-                key={day}
-                className={`bg-surface flex min-h-50 flex-col gap-2.5 rounded-[18px] border p-3 ${
-                  isToday ? "border-coral-deep border-[1.5px]" : "border-line"
-                }`}
-              >
-                {/* Day header */}
-                <div className="flex items-baseline justify-between">
-                  <div>
-                    <div
-                      className={`text-[13px] font-semibold tracking-[0.02em] uppercase ${
-                        isToday ? "text-coral-deep" : "text-foreground"
-                      }`}
-                    >
-                      {getDayName(day).slice(0, 3)}
-                    </div>
-                    <div className="text-ink-faint mt-0.5 font-mono text-[11px]">
-                      {formatDateDisplay(date)}
-                    </div>
-                  </div>
-                  {isToday && (
-                    <span className="font-display text-coral-deep text-[13px] italic">
-                      today
-                    </span>
-                  )}
-                </div>
-
-                {/* Planned workouts (sortable) + standalone activities */}
-                <div className="flex max-h-56 flex-1 flex-col gap-1 overflow-y-auto">
-                  <SortableDay
-                    day={day}
-                    workoutIds={dayWorkouts.map((workout) => workout.id)}
-                    showInsertionSlots={
-                      activeDragSourceDay !== null &&
-                      activeDragSourceDay !== day
-                    }
-                    isEmpty={
-                      dayWorkouts.length === 0 && dayActivities.length === 0
-                    }
-                    isDragActive={activeId !== null}
+                return (
+                  <motion.div
+                    key={day}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.22,
+                      ease: "easeOut",
+                      delay: index * 0.04,
+                    }}
+                    className={`bg-surface flex min-h-50 flex-col gap-2.5 rounded-[18px] border p-3 ${
+                      isToday
+                        ? "border-coral-deep border-[1.5px]"
+                        : "border-line"
+                    }`}
                   >
-                    {dayWorkouts.map((workout) => (
-                      <SortableWorkoutCard key={workout.id} id={workout.id}>
-                        <WorkoutCard
-                          kind="planned"
-                          sport={workout.sport}
-                          workoutType={workout.workoutType}
-                          heartRateZone={workout.heartRateZone}
-                          distance={workout.distance ?? 0}
-                          duration={workout.duration}
-                          completed={workout.completed}
-                          syncStatus={workout.syncStatus}
-                          actualDistance={workout.actualDistance}
-                          actualDuration={workout.actualDuration}
-                          onClick={() => handleOpenDialog(day, workout)}
-                        />
-                      </SortableWorkoutCard>
-                    ))}
-                  </SortableDay>
-                  {dayActivities.map((activity) => (
-                    <DraggableActivityCard
-                      key={activity.id}
-                      activityId={activity.id}
-                    >
-                      <WorkoutCard
-                        kind="activity"
-                        sport={activity.sport}
-                        title={activity.title}
-                        distance={activity.distance}
-                        duration={activity.duration}
-                        pace={activity.pace ?? null}
-                        onClick={() => setViewingActivity(activity)}
-                      />
-                    </DraggableActivityCard>
-                  ))}
-                </div>
+                    {/* Day header */}
+                    <div className="flex items-baseline justify-between">
+                      <div>
+                        <div
+                          className={`text-[13px] font-semibold tracking-[0.02em] uppercase ${
+                            isToday ? "text-coral-deep" : "text-foreground"
+                          }`}
+                        >
+                          {getDayName(day).slice(0, 3)}
+                        </div>
+                        <div className="text-ink-faint mt-0.5 font-mono text-[11px]">
+                          {formatDateDisplay(date)}
+                        </div>
+                      </div>
+                      {isToday && (
+                        <span className="font-display text-coral-deep text-[13px] italic">
+                          today
+                        </span>
+                      )}
+                    </div>
 
-                {/* Add workout button — icon-only, expands on hover */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleOpenDialog(day)}
-                  className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-800 ease-out hover:w-auto hover:px-2 active:scale-105"
-                >
-                  <Plus className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
-                  <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover:ml-0.5 group-hover:max-w-24 group-hover:opacity-100">
-                    Add workout
-                  </span>
-                </Button>
-              </div>
-            );
-          })}
+                    {/* Planned workouts (sortable) + standalone activities */}
+                    <div className="flex max-h-56 flex-1 flex-col gap-1 overflow-y-auto">
+                      <SortableDay
+                        day={day}
+                        workoutIds={dayWorkouts.map((workout) => workout.id)}
+                        showInsertionSlots={
+                          activeDragSourceDay !== null &&
+                          activeDragSourceDay !== day
+                        }
+                        isEmpty={
+                          dayWorkouts.length === 0 && dayActivities.length === 0
+                        }
+                        isDragActive={activeId !== null}
+                      >
+                        {dayWorkouts.map((workout) => (
+                          <SortableWorkoutCard
+                            key={workout.id}
+                            id={workout.id}
+                            isMergeAnimating={mergeAnimatingIds.has(workout.id)}
+                          >
+                            <WorkoutCard
+                              kind="planned"
+                              sport={workout.sport}
+                              workoutType={workout.workoutType}
+                              heartRateZone={workout.heartRateZone}
+                              distance={workout.distance ?? 0}
+                              duration={workout.duration}
+                              completed={workout.completed}
+                              syncStatus={workout.syncStatus}
+                              actualDistance={workout.actualDistance}
+                              actualDuration={workout.actualDuration}
+                              onClick={() => handleOpenDialog(day, workout)}
+                            />
+                          </SortableWorkoutCard>
+                        ))}
+                      </SortableDay>
+                      {dayActivities.map((activity) => (
+                        <DraggableActivityCard
+                          key={activity.id}
+                          activityId={activity.id}
+                        >
+                          <WorkoutCard
+                            kind="activity"
+                            sport={activity.sport}
+                            title={activity.title}
+                            distance={activity.distance}
+                            duration={activity.duration}
+                            pace={activity.pace ?? null}
+                            onClick={() => setViewingActivity(activity)}
+                          />
+                        </DraggableActivityCard>
+                      ))}
+                    </div>
+
+                    {/* Add workout button — icon-only, expands on hover */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleOpenDialog(day)}
+                      className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-800 ease-out hover:w-auto hover:px-2 active:scale-105"
+                    >
+                      <Plus className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
+                      <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover:ml-0.5 group-hover:max-w-24 group-hover:opacity-100">
+                        Add workout
+                      </span>
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* ── Weather forecast (fixed in right gutter) ──────────── */}
@@ -621,11 +688,24 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
         />
 
         <DragOverlay>
-          <div
-            className={`transition-transform duration-200 ${isOverTrash ? "scale-75 opacity-60" : ""}`}
+          <motion.div
+            animate={
+              trashAnimating
+                ? { scale: 0, opacity: 0, rotate: 12 }
+                : isOverTrash
+                  ? { scale: 0.75, opacity: 0.6 }
+                  : { scale: 1, opacity: 1, rotate: 0 }
+            }
+            transition={
+              trashAnimating
+                ? { duration: 0.4, ease: [0.22, 0.9, 0.32, 1] }
+                : { duration: 0.2 }
+            }
           >
-            {renderDragOverlay()}
-          </div>
+            {trashAnimating
+              ? (overlaySnapshot ?? renderDragOverlay())
+              : renderDragOverlay()}
+          </motion.div>
         </DragOverlay>
         <TrashBin isDragActive={activeId !== null} />
       </div>

@@ -8,6 +8,7 @@ import {
 } from "@dnd-kit/sortable";
 import { DayOfWeek } from "@/types/workout";
 import { GripVertical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface InsertionIndicatorProps {
   day: DayOfWeek;
@@ -89,17 +90,34 @@ export function SortableDay({
               : "border-line-strong text-ink-faint"
           }`}
         >
-          {isDragActive ? (
-            <span className="text-ink-faint animate-in fade-in text-[11px] duration-200">
-              Drop here
-            </span>
-          ) : (
-            <GripVertical
-              size={25}
-              strokeWidth={1.5}
-              className="text-ink-faint/30"
-            />
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            {isDragActive ? (
+              <motion.span
+                key="drop-hint"
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="text-ink-faint text-[11px]"
+              >
+                Drop here
+              </motion.span>
+            ) : (
+              <motion.span
+                key="grip-icon"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
+              >
+                <GripVertical
+                  size={25}
+                  strokeWidth={1.5}
+                  className="text-ink-faint/30"
+                />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
       </SortableContext>
     );
