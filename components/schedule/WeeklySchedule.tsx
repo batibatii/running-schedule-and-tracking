@@ -571,7 +571,7 @@ export function WeeklySchedule({ syncTrigger }: WeeklyScheduleProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleOpenDialog(day)}
-                    className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-800 ease-out hover:w-auto hover:px-2 active:scale-105"
+                    className="group bg-bg-soft hover:bg-bg-soft h-7 w-7 rounded-full transition-all duration-300 ease-out hover:w-43 hover:px-2 active:scale-105"
                   >
                     <Plus className="h-3 w-3 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
                     <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover:ml-0.5 group-hover:max-w-24 group-hover:opacity-100">

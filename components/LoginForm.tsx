@@ -104,7 +104,7 @@ export default function LoginForm() {
             setUnverifiedEmail(data.email);
             throw new Error("Please verify your email before logging in");
           }
-          throw new Error(result.error);
+          throw new Error("Invalid email or password. Please try again.");
         }
 
         setTimeout(() => {
@@ -234,10 +234,7 @@ export default function LoginForm() {
 
               {error && <ErrorAlert message={error} />}
               {success && (
-                <SuccessAlert
-                  message="Login successful! Redirecting..."
-                  className="bg-white pl-2"
-                />
+                <SuccessAlert message="Login successful! Redirecting..." />
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">

@@ -1,4 +1,4 @@
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { X } from "lucide-react";
 
 interface ErrorAlertProps {
   message?: string;
@@ -9,10 +9,12 @@ export function ErrorAlert({ message, className }: ErrorAlertProps) {
   if (!message) return null;
 
   return (
-    <Alert variant="destructive" className={`${className}`}>
-      <AlertTitle className="text-destructive/85 border-none pt-1 pl-2">
-        {message}
-      </AlertTitle>
-    </Alert>
+    <div
+      role="alert"
+      className={`bg-destructive/10 flex items-center gap-2 rounded-lg px-3 py-2.5 ${className ?? ""}`}
+    >
+      <X className="text-destructive size-3.5 shrink-0" strokeWidth={3} />
+      <p className="text-ink-soft text-[13px] leading-snug">{message}</p>
+    </div>
   );
 }

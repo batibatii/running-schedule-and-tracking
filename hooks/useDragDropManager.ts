@@ -625,7 +625,9 @@ export function useDragDropManager({
       onWorkoutTrashed?.(workoutId, workoutLabel);
 
       toast.success(
-        `"${workout?.title || workout?.workoutType || "Workout"}" deleted`,
+        workout
+          ? `Your ${getSportLabel(workout.sport).toLowerCase()} activity "${workout.title || getWorkoutTypeLabel(workout.workoutType)}" was deleted`
+          : "Workout deleted",
         {
           description: "You can undo this action",
           action: {
