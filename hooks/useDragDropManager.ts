@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { DragStartEvent, DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import {
   DayOfWeek,
@@ -172,9 +172,24 @@ export function useDragDropManager({
     Map<string, { day: DayOfWeek; insertIndex?: number }>
   >(new Map());
 
+  // Track setTimeout IDs for cleanup on unmount
+  const timeoutIds = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  useEffect(() => {
+    const ids = timeoutIds.current;
+    return () => ids.forEach(clearTimeout);
+  }, []);
+
+  function trackedTimeout(fn: () => void, ms: number) {
+    const id = setTimeout(() => {
+      timeoutIds.current.delete(id);
+      fn();
+    }, ms);
+    timeoutIds.current.add(id);
+  }
+
   function triggerMergePulse(workoutId: string) {
     setMergeAnimatingIds((prev) => new Set([...prev, workoutId]));
-    setTimeout(() => {
+    trackedTimeout(() => {
       setMergeAnimatingIds((prev) => {
         const next = new Set(prev);
         next.delete(workoutId);
@@ -212,7 +227,7 @@ export function useDragDropManager({
       // Keep overlay alive for shrink animation — delayed cleanup
       setTrashAnimating(true);
       setIsOverTrash(false);
-      setTimeout(() => {
+      trackedTimeout(() => {
         setActiveId(null);
         setActiveDragType(null);
         setTrashAnimating(false);

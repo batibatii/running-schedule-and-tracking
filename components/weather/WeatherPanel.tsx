@@ -8,6 +8,7 @@ import {
 } from "@/components/icons/WeatherIcons";
 import { WEATHER_ICON_TINT } from "@/lib/constants/ui";
 import { motion, AnimatePresence } from "framer-motion";
+import { EASE_DECELERATE } from "@/lib/constants/timing";
 import type { WeatherBounds } from "@/hooks/useWeatherBounds";
 
 interface WeatherPanelProps {
@@ -60,7 +61,7 @@ export function WeatherPanel({
           exit="hidden"
           transition={{
             duration: 0.34,
-            ease: [0.22, 0.9, 0.32, 1],
+            ease: EASE_DECELERATE,
           }}
         >
           {/* ── Header ──────────────────────────────────────────────── */}
