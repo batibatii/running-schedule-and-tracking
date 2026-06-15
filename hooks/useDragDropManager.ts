@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { DragStartEvent, DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import {
   DayOfWeek,
@@ -16,6 +16,7 @@ import {
   DragItemType,
 } from "@/types/playground";
 import { calculateDuration } from "@/lib/utils/pace";
+import { TRASH_ANIMATION_MS, MERGE_PULSE_MS } from "@/lib/constants/timing";
 import {
   getSportLabel,
   getWorkoutTypeLabel,
@@ -61,6 +62,8 @@ interface UseDragDropManagerProps {
   restorePreset: (preset: Preset) => void;
   refreshWorkouts: () => void;
   onWorkoutTrashed?: (workoutId: string, workoutLabel: string) => void;
+  onTrashAnimationStart?: () => void;
+  onTrashAnimationEnd?: () => void;
 }
 
 //Decompose a workout into individual pills.
@@ -153,15 +156,47 @@ export function useDragDropManager({
   restorePreset,
   refreshWorkouts,
   onWorkoutTrashed,
+  onTrashAnimationStart,
+  onTrashAnimationEnd,
 }: UseDragDropManagerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeDragType, setActiveDragType] = useState<DragItemType | null>(
     null,
   );
   const [isOverTrash, setIsOverTrash] = useState(false);
+  const [trashAnimating, setTrashAnimating] = useState(false);
+  const [mergeAnimatingIds, setMergeAnimatingIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [pendingChanges, setPendingChanges] = useState<
     Map<string, { day: DayOfWeek; insertIndex?: number }>
   >(new Map());
+
+  // Track setTimeout IDs for cleanup on unmount
+  const timeoutIds = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  useEffect(() => {
+    const ids = timeoutIds.current;
+    return () => ids.forEach(clearTimeout);
+  }, []);
+
+  function trackedTimeout(fn: () => void, ms: number) {
+    const id = setTimeout(() => {
+      timeoutIds.current.delete(id);
+      fn();
+    }, ms);
+    timeoutIds.current.add(id);
+  }
+
+  function triggerMergePulse(workoutId: string) {
+    setMergeAnimatingIds((prev) => new Set([...prev, workoutId]));
+    trackedTimeout(() => {
+      setMergeAnimatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(workoutId);
+        return next;
+      });
+    }, MERGE_PULSE_MS);
+  }
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     setIsOverTrash(event.over?.data.current?.type === "trash");
@@ -174,14 +209,35 @@ export function useDragDropManager({
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    setActiveId(null);
-    setActiveDragType(null);
-    setIsOverTrash(false);
 
-    if (!over) return;
+    if (!over) {
+      setActiveId(null);
+      setActiveDragType(null);
+      setIsOverTrash(false);
+      return;
+    }
 
     const sourceType = active.data.current?.type as string;
     const targetType = over.data.current?.type as string;
+    const isTrashDrop = targetType === "trash";
+
+    if (isTrashDrop) {
+      // Capture overlay content before data mutations
+      onTrashAnimationStart?.();
+      // Keep overlay alive for shrink animation — delayed cleanup
+      setTrashAnimating(true);
+      setIsOverTrash(false);
+      trackedTimeout(() => {
+        setActiveId(null);
+        setActiveDragType(null);
+        setTrashAnimating(false);
+        onTrashAnimationEnd?.();
+      }, TRASH_ANIMATION_MS);
+    } else {
+      setActiveId(null);
+      setActiveDragType(null);
+      setIsOverTrash(false);
+    }
 
     if (sourceType === "pill" && targetType === "trash") {
       const pill = active.data.current?.pill as Pill;
@@ -244,6 +300,7 @@ export function useDragDropManager({
       if (!updateResult) return;
       removeItem(pill.id);
       refreshWorkouts();
+      triggerMergePulse(targetWorkoutId);
 
       if (
         oldValue !== undefined &&
@@ -478,6 +535,7 @@ export function useDragDropManager({
       if (!mergeResult) return;
       removeItem(group.id);
       refreshWorkouts();
+      triggerMergePulse(targetWorkoutId);
       return;
     }
 
@@ -714,6 +772,7 @@ export function useDragDropManager({
       );
       if (!applyResult) return;
       refreshWorkouts();
+      triggerMergePulse(targetWorkoutId);
       return;
     }
 
@@ -775,6 +834,8 @@ export function useDragDropManager({
     activeId,
     activeDragType,
     isOverTrash,
+    trashAnimating,
+    mergeAnimatingIds,
     pendingChanges,
     handleDragStart,
     handleDragOver,

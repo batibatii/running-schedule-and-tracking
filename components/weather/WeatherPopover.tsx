@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PartlyGlyph, Sparkle } from "@/components/icons/WeatherIcons";
 import { WEATHER_ICON_TINT } from "@/lib/constants/ui";
 import { motion, AnimatePresence } from "framer-motion";
+import { EASE_DECELERATE } from "@/lib/constants/timing";
 import type { WeatherBounds } from "@/hooks/useWeatherBounds";
 
 interface WeatherPopoverProps {
@@ -40,7 +41,7 @@ export function WeatherPopover({
             initial="hidden"
             animate="visible"
             exit="hidden"
-            transition={{ duration: 0.22, ease: [0.22, 0.9, 0.32, 1] }}
+            transition={{ duration: 0.22, ease: EASE_DECELERATE }}
           >
             <div className="border-line bg-surface relative rounded-xl border p-4.5 shadow-lg">
               {/* Caret pointing right toward the badge */}

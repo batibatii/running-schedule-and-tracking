@@ -5,7 +5,13 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { EASE_DECELERATE } from "@/lib/constants/timing";
 
+const ACCORDION_SPRING = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 24,
+};
 const STORAGE_KEY = "grindtrack:accordion-state";
 
 function readPersistedState(storageKey: string, defaultOpen: boolean): boolean {
@@ -109,10 +115,24 @@ export function AccordionPanel({
           height: isOpen ? "auto" : 0,
           opacity: isOpen ? 1 : 0,
         }}
-        transition={{ duration: 0.25, ease: [0.22, 0.9, 0.32, 1] }}
+        transition={
+          isOpen ? ACCORDION_SPRING : { duration: 0.2, ease: EASE_DECELERATE }
+        }
         className="overflow-hidden"
       >
-        <div className="px-4.5 pb-4.5">{children}</div>
+        <motion.div
+          initial={false}
+          animate={{
+            y: isOpen ? 0 : -8,
+            scale: isOpen ? 1 : 0.98,
+          }}
+          transition={
+            isOpen ? ACCORDION_SPRING : { duration: 0.2, ease: "easeIn" }
+          }
+          className="origin-top px-4.5 pb-4.5"
+        >
+          {children}
+        </motion.div>
       </motion.div>
     </section>
   );

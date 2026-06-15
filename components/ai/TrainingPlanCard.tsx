@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SportIcon } from "@/components/icons/SportIcon";
 import { SPORT_ICON_BACKGROUND } from "@/lib/constants/ui";
 import { getWorkoutTypeLabel, getZoneLabel } from "@/lib/utils/workoutLabels";
+import { EASE_DECELERATE } from "@/lib/constants/timing";
 import {
   formatDateDisplay,
   getWeekStartDate,
@@ -366,7 +367,7 @@ export function TrainingPlanCard({
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.35, ease: [0.22, 0.9, 0.32, 1] }}
+      transition={{ duration: 0.35, ease: EASE_DECELERATE }}
       className="border-line-strong bg-background rounded-[18px] border border-dashed p-3.5 pb-3"
       style={{ maxWidth: "96%" }}
     >
